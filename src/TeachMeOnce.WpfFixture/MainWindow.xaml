@@ -1,0 +1,104 @@
+<Window x:Class="TeachMeOnce.WpfFixture.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="TeachMeOnce WPF Fixture"
+        Width="720"
+        Height="620"
+        AutomationProperties.AutomationId="WpfFixtureWindow">
+  <ScrollViewer AutomationProperties.AutomationId="FixtureScrollViewer">
+    <StackPanel Margin="24" AutomationProperties.AutomationId="FixtureRootPanel">
+      <TextBlock Text="UI Automation coverage fixture"
+                 FontSize="22"
+                 AutomationProperties.AutomationId="FixtureHeading" />
+      <TextBlock Margin="0,8,0,16"
+                 Text="This window contains representative WPF controls for the POC."
+                 AutomationProperties.AutomationId="FixtureDescription" />
+
+      <Button Width="220"
+              HorizontalAlignment="Left"
+              Margin="0,4"
+              Content="Invoke button"
+              AutomationProperties.AutomationId="InvokeButton"
+              Click="InvokeButton_OnClick" />
+      <TextBlock x:Name="StatusText"
+                 Margin="0,4,0,12"
+                 Text="Status: ready"
+                 AutomationProperties.AutomationId="StatusText" />
+
+      <StackPanel x:Name="ValueControlHost"
+                  Width="320"
+                  HorizontalAlignment="Left"
+                  Margin="0,4"
+                  AutomationProperties.AutomationId="ValueControlHost">
+        <TextBox x:Name="ValueTextBox"
+                 Text="editable value"
+                 AutomationProperties.AutomationId="ValueTextBox" />
+      </StackPanel>
+      <Button Width="220"
+              HorizontalAlignment="Left"
+              Margin="0,2"
+              Content="Recreate value control"
+              AutomationProperties.AutomationId="RecreateValueButton"
+              Click="RecreateValueButton_OnClick" />
+      <Button Width="220"
+              HorizontalAlignment="Left"
+              Margin="0,2"
+              Content="Add duplicate value control"
+              AutomationProperties.AutomationId="AddDuplicateValueButton"
+              Click="AddDuplicateValueButton_OnClick" />
+      <Button Width="220"
+              HorizontalAlignment="Left"
+              Margin="0,2"
+              Content="Remove duplicate value control"
+              AutomationProperties.AutomationId="RemoveDuplicateValueButton"
+              Click="RemoveDuplicateValueButton_OnClick" />
+      <Button Width="220"
+              HorizontalAlignment="Left"
+              Margin="0,2,0,4"
+              Content="Remove value control"
+              AutomationProperties.AutomationId="RemoveValueButton"
+              Click="RemoveValueButton_OnClick" />
+      <PasswordBox Width="320"
+                   HorizontalAlignment="Left"
+                   Margin="0,4"
+                   AutomationProperties.AutomationId="PasswordBox" />
+      <CheckBox Margin="0,8"
+                Content="Toggle option"
+                AutomationProperties.AutomationId="ToggleCheckBox" />
+      <ComboBox Width="320"
+                HorizontalAlignment="Left"
+                Margin="0,4"
+                SelectedIndex="0"
+                AutomationProperties.AutomationId="SelectionComboBox">
+        <ComboBoxItem Content="First option" AutomationProperties.AutomationId="FirstOption" />
+        <ComboBoxItem Content="Second option" AutomationProperties.AutomationId="SecondOption" />
+        <ComboBoxItem Content="Third option" AutomationProperties.AutomationId="ThirdOption" />
+      </ComboBox>
+
+      <ListBox Height="90"
+               Width="320"
+               HorizontalAlignment="Left"
+               Margin="0,8"
+               AutomationProperties.AutomationId="SelectionListBox">
+        <ListBoxItem Content="List item one" AutomationProperties.AutomationId="ListItemOne" />
+        <ListBoxItem Content="List item two" AutomationProperties.AutomationId="ListItemTwo" />
+        <ListBoxItem Content="List item three" AutomationProperties.AutomationId="ListItemThree" />
+      </ListBox>
+
+      <Expander Width="320"
+                HorizontalAlignment="Left"
+                Header="Expandable section"
+                AutomationProperties.AutomationId="ExpandableSection">
+        <TextBlock Margin="8" Text="Expanded content" AutomationProperties.AutomationId="ExpandedContent" />
+      </Expander>
+      <Button Width="220"
+              HorizontalAlignment="Left"
+              Margin="0,12,0,4"
+              Content="Show delayed dialog"
+              AutomationProperties.AutomationId="DelayedDialogButton"
+              Click="DelayedDialogButton_OnClick" />
+      <StackPanel x:Name="AsyncWaitHost"
+                  AutomationProperties.AutomationId="AsyncWaitHost" />
+    </StackPanel>
+  </ScrollViewer>
+</Window>

@@ -1,0 +1,10 @@
+<Window x:Class="TeachMeOnce.WpfCustomFixture.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:TeachMeOnce.WpfCustomFixture"
+        Title="TeachMeOnce WPF Custom Fixture"
+        Width="760"
+        Height="540"
+        AutomationProperties.AutomationId="WpfCustomFixtureWindow">
+  <local:CustomRenderedSurface />
+</Window>

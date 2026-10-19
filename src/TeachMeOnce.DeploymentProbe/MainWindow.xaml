@@ -1,0 +1,15 @@
+<Window x:Class="TeachMeOnce.DeploymentProbe.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="TeachMeOnce Deployment Probe"
+        Width="620"
+        Height="360"
+        AutomationProperties.AutomationId="DeploymentProbeWindow">
+  <StackPanel Margin="32">
+    <TextBlock Text="TeachMeOnce clean deployment probe" FontSize="22" AutomationProperties.AutomationId="DeploymentHeading" />
+    <TextBlock x:Name="StatusText" Margin="0,18,0,10" Text="Status: ready" AutomationProperties.AutomationId="DeploymentStatusText" />
+    <TextBox x:Name="ProbeValue" Width="420" HorizontalAlignment="Left" Text="deployment value" AutomationProperties.AutomationId="DeploymentValueTextBox" />
+    <Button x:Name="ProbeActionButton" Width="220" Margin="0,14,0,0" HorizontalAlignment="Left" Content="Run deployment action" AutomationProperties.AutomationId="DeploymentActionButton" Click="ProbeActionButton_OnClick" />
+    <TextBlock Margin="0,18,0,0" Text="The probe records configuration, logging, writable data, and errors under LocalAppData." TextWrapping="Wrap" />
+  </StackPanel>
+</Window>

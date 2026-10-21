@@ -97,7 +97,7 @@ client of that boundary; do not copy behavior into the app.
 | UIA adapter | STA/MTA-safe access wrapper, property/pattern reads, process/window context, stale handling | POC-derived `TeachMeOnce.Automation`; expand behind interfaces |
 | Target resolver | Descriptor matching, exactly-one invariant, ambiguity/context failure | POC-derived and used by first slice |
 | Wait engine | Bounded asynchronous polling, cancellation, timeout and UIA error states | POC-derived and used by first slice |
- | Action executor | Map action types to adapters, verify, report partial failure, enforce privilege policy | Registry-backed Invoke, SetValue, and TextInput adapters; broader action set planned |
+ | Action executor | Map action types to adapters, verify, report partial failure, enforce privilege policy | Registry-backed Invoke, SetValue, TextInput, and Toggle adapters; Select and ExpandCollapse planned |
 | Workflow storage | Versioned JSON, atomic writes, validation, migrations, per-user paths | First slice JSON store; migrations planned |
 | Diagnostics | Structured entries, redacted logs, correlation IDs, user-facing failure details | First slice log; structured schema/retention planned |
 | Display context | DPI/monitor/coordinate-space evidence and fallback policy | POC evidence; product contract planned |

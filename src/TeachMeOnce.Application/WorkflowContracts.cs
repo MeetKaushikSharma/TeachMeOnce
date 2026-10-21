@@ -7,6 +7,14 @@ namespace TeachMeOnce.Application;
 public static class WorkflowSchema
 {
     public const int CurrentVersion = 1;
+
+    public static readonly IReadOnlySet<string> SupportedToggleStates =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "On",
+            "Off",
+            "Indeterminate"
+        };
 }
 
 public sealed class WorkflowDocument

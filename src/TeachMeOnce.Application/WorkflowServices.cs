@@ -111,6 +111,12 @@ public sealed class JsonWorkflowStore : IWorkflowStore
                     throw new InvalidDataException($"Workflow '{source}' contains unsafe text-entry data.");
                 }
             }
+
+            if (string.Equals(action.ActionType, "Toggle", StringComparison.Ordinal)
+                && (action.ExpectedValue is null || !WorkflowSchema.SupportedToggleStates.Contains(action.ExpectedValue)))
+            {
+                throw new InvalidDataException($"Workflow '{source}' contains a Toggle action without a canonical expected state.");
+            }
         }
     }
 }
@@ -336,6 +342,14 @@ public sealed class UiAutomationWorkflowExecutor : IWorkflowExecutor
                 {
                     _diagnostics.Write("Info", $"Invoked action {index + 1} of {workflow.Actions.Count}.");
                 }
+                else if (string.Equals(action.ActionType, "Toggle", StringComparison.Ordinal))
+                {
+                    _diagnostics.Write("Info", $"Toggled action {index + 1} of {workflow.Actions.Count} to {action.ExpectedValue}.");
+                    if (!await WaitForToggleStateAsync(action.Target, action.ExpectedValue!, cancellationToken))
+                    {
+                        return Result(ExecutionStatus.TimedOut, "Toggle completed without reaching the expected state.", completedActionCount, started);
+                    }
+                }
                 else
                 {
                     var inputValue = action.InputValue!;
@@ -501,6 +515,51 @@ public sealed class UiAutomationWorkflowExecutor : IWorkflowExecutor
             catch (Exception exception) when (exception is ElementNotAvailableException or COMException or InvalidOperationException)
             {
                 // The provider can be stale; retry the same descriptor within the bounded deadline.
+            }
+
+            await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+        }
+
+        return false;
+    }
+
+    private async Task<bool> WaitForToggleStateAsync(
+        TargetDescriptor descriptor,
+        string expectedState,
+        CancellationToken cancellationToken)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(3);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                var remaining = deadline - DateTimeOffset.UtcNow;
+                if (remaining <= TimeSpan.Zero)
+                {
+                    break;
+                }
+
+                var windowResult = await WaitForActionWindowAsync(descriptor, remaining, cancellationToken).ConfigureAwait(false);
+                if (windowResult.Status != WaitStatus.Satisfied || windowResult.Value is null)
+                {
+                    await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                var resolution = _resolver.Resolve(windowResult.Value, descriptor);
+                if (resolution.Status == ResolutionStatus.Resolved
+                    && resolution.Element is not null
+                    && resolution.Element.TryGetCurrentPattern(TogglePattern.Pattern, out var patternObject)
+                    && patternObject is TogglePattern pattern
+                    && string.Equals(pattern.Current.ToggleState.ToString(), expectedState, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            catch (Exception exception) when (exception is ElementNotAvailableException or COMException or InvalidOperationException)
+            {
+                // Reacquire the same descriptor within the bounded verification window.
             }
 
             await Task.Delay(50, cancellationToken).ConfigureAwait(false);

@@ -57,6 +57,55 @@ public sealed class WorkflowActionAdapterRegistry
         yield return new InvokeActionAdapter();
         yield return new SetValueActionAdapter();
         yield return new TextInputActionAdapter();
+        yield return new ToggleActionAdapter();
+    }
+}
+
+internal sealed class ToggleActionAdapter : IWorkflowActionAdapter
+{
+    public string ActionType => "Toggle";
+
+    public IReadOnlyList<string> RequiredPatterns { get; } = new[] { "Toggle" };
+
+    public ActionAdapterResult Execute(
+        WorkflowAction action,
+        AutomationElement target,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (action.ExpectedValue is null || !WorkflowSchema.SupportedToggleStates.Contains(action.ExpectedValue))
+        {
+            return ActionAdapterResult.Unsupported("Toggle action has no canonical expected state.");
+        }
+
+        try
+        {
+            if (!(bool)target.GetCurrentPropertyValue(AutomationElement.IsEnabledProperty))
+            {
+                return ActionAdapterResult.Unsupported("Resolved toggle target is disabled.");
+            }
+
+            if (!target.TryGetCurrentPattern(TogglePattern.Pattern, out var patternObject)
+                || patternObject is not TogglePattern pattern)
+            {
+                return ActionAdapterResult.Unsupported("Resolved target does not expose TogglePattern.");
+            }
+
+            pattern.Toggle();
+            return ActionAdapterResult.Success("TogglePattern execution completed.");
+        }
+        catch (ElementNotEnabledException)
+        {
+            return ActionAdapterResult.Unsupported("Resolved toggle target became disabled before execution.");
+        }
+        catch (ElementNotAvailableException)
+        {
+            return ActionAdapterResult.Failed("Resolved toggle target became unavailable during execution.");
+        }
+        catch (InvalidOperationException)
+        {
+            return ActionAdapterResult.Failed("TogglePattern execution failed because the provider rejected the operation.");
+        }
     }
 }
 

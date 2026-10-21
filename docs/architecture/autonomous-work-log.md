@@ -31,6 +31,12 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Fixed semantic text replay to foreground and process-validate the resolved
   native window before sending input, and to prefer a writable `ValuePattern`
   when a `TextInput` target exposes both text patterns.
+- Added the first additional UIA action: `Toggle`. Recording conservatively
+  accepts one toggle candidate per session, reacquires it after hook drain,
+  stores the observed canonical `On`/`Off`/`Indeterminate` state, and refuses
+  ambiguous multi-toggle recordings. Replay checks enabled state, executes one
+  `TogglePattern.Toggle()`, and verifies the exact expected state without
+  retrying the toggle operation.
 - Updated the Notepad runbook to accept either `SetValue` or `TextInput`.
 
 ## Verification actually run
@@ -66,7 +72,10 @@ and target waiting rather than the capture implementation.
 
 1. Review the full diff and create a cohesive commit for the verified P1/P2.1
    increment.
-2. Add fixture coverage for adapter execution and stale-provider retry paths,
+2. Run interactive WPF/WinForms Toggle recording and replay evidence; injected
+   SendInput is intentionally filtered by the recorder and is not a substitute
+   for physical input acceptance.
+3. Add fixture coverage for adapter execution and stale-provider retry paths,
    keeping the existing dependency-free test boundary.
-3. Extend the registry with the next action only when a deterministic fixture,
-   capability check, and postcondition can be provided.
+4. Extend the registry with Select only when deterministic selection state and
+   postcondition coverage are available.

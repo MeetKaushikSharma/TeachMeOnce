@@ -59,9 +59,11 @@ internal static class Program
             Assert(actionRegistry.TryGet("Invoke", out var invokeAdapter) && invokeAdapter is not null, "the action registry exposes Invoke");
             Assert(actionRegistry.TryGet("SetValue", out var setValueAdapter) && setValueAdapter is not null, "the action registry exposes SetValue");
             Assert(actionRegistry.TryGet("TextInput", out var textInputAdapter) && textInputAdapter is not null, "the action registry exposes TextInput");
+            Assert(actionRegistry.TryGet("Toggle", out var toggleAdapter) && toggleAdapter is not null, "the action registry exposes Toggle");
             Assert(!actionRegistry.TryGet("UnknownAction", out _), "unknown action types are rejected by the registry");
             Assert(invokeAdapter!.RequiredPatterns.Contains("Invoke"), "Invoke declares its required UIA pattern");
             Assert(setValueAdapter!.RequiredPatterns.Contains("Value"), "SetValue declares its required UIA pattern");
+            Assert(toggleAdapter!.RequiredPatterns.Contains("Toggle"), "Toggle declares its required UIA pattern");
 
             var secondWorkflow = new WorkflowDocument
             {
@@ -121,18 +123,74 @@ internal static class Program
             var textInputReloaded = await store.LoadAsync(CancellationToken.None);
             Assert(textInputReloaded.Workflows.Single(item => item.Name == "Text input workflow").Actions[0].ActionType == "TextInput", "TextInput actions survive persistence");
 
+            var toggleWorkflow = new WorkflowDocument
+            {
+                Name = "Toggle workflow",
+                Actions = new[]
+                {
+                    new WorkflowAction
+                    {
+                        ActionType = "Toggle",
+                        Description = "Toggle option to On",
+                        Target = new TargetDescriptor
+                        {
+                            Process = descriptor.Process,
+                            Window = descriptor.Window,
+                            Element = new ElementDescriptor
+                            {
+                                AutomationId = "ToggleCheckBox",
+                                Name = "Toggle option",
+                                ControlType = "ControlType.CheckBox",
+                                RequiredPatterns = new[] { "Toggle" }
+                            },
+                            Ancestors = Array.Empty<ElementDescriptor>()
+                        },
+                        ExpectedValue = "On"
+                    }
+                }
+            };
+            await store.SaveAsync(toggleWorkflow, CancellationToken.None);
+            var toggleReloaded = await store.LoadAsync(CancellationToken.None);
+            Assert(toggleReloaded.Workflows.Single(item => item.Name == "Toggle workflow").Actions[0].ExpectedValue == "On", "Toggle expected state survives persistence");
+            Assert(toggleReloaded.Workflows.Single(item => item.Name == "Toggle workflow").Actions[0].Target.Element.RequiredPatterns.Contains("Toggle"), "Toggle target capability survives persistence");
+
+            var invalidToggleRejected = false;
+            try
+            {
+                await store.SaveAsync(new WorkflowDocument
+                {
+                    Name = "Invalid toggle workflow",
+                    Actions = new[]
+                    {
+                        new WorkflowAction
+                        {
+                            ActionType = "Toggle",
+                            Description = "Invalid toggle",
+                            Target = toggleWorkflow.Actions[0].Target,
+                            ExpectedValue = "Maybe"
+                        }
+                    }
+                }, CancellationToken.None);
+            }
+            catch (InvalidDataException)
+            {
+                invalidToggleRejected = true;
+            }
+
+            Assert(invalidToggleRejected, "Toggle workflows reject non-canonical expected states");
+
             var path = Directory.EnumerateFiles(root, "*.json").First();
             var json = await File.ReadAllTextAsync(path);
             var invalidJson = json.Replace("\"schemaVersion\": 1", "\"schemaVersion\": 99", StringComparison.Ordinal);
             await File.WriteAllTextAsync(path, invalidJson);
             var invalidResult = await store.LoadAsync(CancellationToken.None);
-            Assert(invalidResult.Workflows.Count == 3, "valid workflows survive an invalid file");
+            Assert(invalidResult.Workflows.Count == 4, "valid workflows survive an invalid file");
             Assert(invalidResult.Issues.Count == 1, "unsupported schema versions are reported");
 
             var malformedPath = Path.Combine(root, "malformed.json");
             await File.WriteAllTextAsync(malformedPath, "{ not valid json");
             var malformedResult = await store.LoadAsync(CancellationToken.None);
-            Assert(malformedResult.Workflows.Count == 3, "valid workflows survive malformed JSON");
+            Assert(malformedResult.Workflows.Count == 4, "valid workflows survive malformed JSON");
             Assert(malformedResult.Issues.Count == 2, "malformed and unsupported files are both reported");
 
             using var cancellation = new CancellationTokenSource();

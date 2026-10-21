@@ -177,6 +177,7 @@ public static class RecordingActionBuilder
     {
         var actions = new List<(long Sequence, WorkflowAction Action)>();
         var textCandidates = new Dictionary<string, TextCandidate>(StringComparer.Ordinal);
+        var toggleCandidates = new List<(long Sequence, TargetDescriptor Descriptor, ElementDescriptor Element)>();
         var rejections = new Dictionary<string, int>(StringComparer.Ordinal);
         var retainedCount = 0;
         var focusedCount = 0;
@@ -235,6 +236,13 @@ public static class RecordingActionBuilder
             if (eventData.Input.Kind == RawInputKind.Mouse
                 && IsLeftButtonDown(eventData.Input.Message)
                 && eventData.TargetElement is not null
+                && HasPattern(eventData.TargetElement, "Toggle"))
+            {
+                toggleCandidates.Add((eventData.Input.Sequence, eventData.TargetDescriptor, eventData.TargetElement));
+            }
+            else if (eventData.Input.Kind == RawInputKind.Mouse
+                && IsLeftButtonDown(eventData.Input.Message)
+                && eventData.TargetElement is not null
                 && HasPattern(eventData.TargetElement, "Invoke"))
             {
                 actions.Add((eventData.Input.Sequence, new WorkflowAction
@@ -273,6 +281,46 @@ public static class RecordingActionBuilder
         }
 
         var root = TryGetWindow(target.Window.Handle);
+        if (toggleCandidates.Count > 1)
+        {
+            Reject("multiple toggle candidates cannot be safely attributed in one recording");
+            diagnostics.Write("Warning", "Toggle recording was refused because more than one toggle candidate was captured; the final state cannot be attributed safely.");
+        }
+        else if (toggleCandidates.Count == 1)
+        {
+            var candidate = toggleCandidates[0];
+            if (root is null)
+            {
+                Reject("toggle target window unavailable during action conversion");
+            }
+            else
+            {
+                var resolution = new TargetResolver().Resolve(root, candidate.Descriptor);
+                if (resolution.Status != ResolutionStatus.Resolved || resolution.Element is null)
+                {
+                    Reject($"toggle target resolution {resolution.Status}");
+                    diagnostics.Write("Warning", $"Toggle was not recorded because the target metadata was {DescribeMetadata(candidate.Element)} and resolution was {resolution.Status}.");
+                }
+                else if (!resolution.Element.TryGetCurrentPattern(TogglePattern.Pattern, out var toggleObject)
+                    || toggleObject is not TogglePattern togglePattern)
+                {
+                    Reject("toggle target no longer exposed TogglePattern");
+                }
+                else
+                {
+                    var expectedState = togglePattern.Current.ToggleState.ToString();
+                    actions.Add((candidate.Sequence, new WorkflowAction
+                    {
+                        ActionType = "Toggle",
+                        Description = $"Toggle {DescribeMetadata(candidate.Element)} to {expectedState}",
+                        Target = candidate.Descriptor,
+                        ExpectedValue = expectedState
+                    }));
+                    diagnostics.Write("Info", $"Recorded Toggle target metadata: {DescribeMetadata(candidate.Element)}, expectedState={expectedState}.");
+                }
+            }
+        }
+
         foreach (var candidate in textCandidates.Values)
         {
             var element = candidate.Descriptor.Element;

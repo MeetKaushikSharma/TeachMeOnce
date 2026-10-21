@@ -78,6 +78,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Added explicit `RetryEligible` execution metadata for cancellation, timeout,
   missing/context-mismatch, and execution failures. Workflow details now expose
   retry eligibility instead of making users infer it from a generic failure.
+- Added `scripts/Test-Product.ps1` as a repeatable product verification entry
+  point for the Release build, dependency-free contract checks, and WPF/WinForms
+  adapter integration checks.
 - Added `TeachMeOnce.Application.IntegrationTests` and
   `scripts/Test-ApplicationAdapters.ps1`. The interactive integration test
   launches the real WPF and WinForms fixtures and verified the product executor

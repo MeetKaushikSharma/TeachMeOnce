@@ -243,6 +243,12 @@ Run the dependency-free application contract checks with:
 dotnet run --project .\src\TeachMeOnce.Application.Tests\TeachMeOnce.Application.Tests.csproj --configuration Release
 ```
 
+Run the focused product verification sequence with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Test-Product.ps1
+```
+
 Run the interactive product adapter integration checks against the WPF and
 WinForms fixtures with:
 

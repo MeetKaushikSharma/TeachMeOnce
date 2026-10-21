@@ -141,7 +141,7 @@ machine.
 | P5.3 | Define installer/signing/update/rollback | Installation is per policy, signed as required, preserves user data, supports rollback, and does not require unsupported elevation behavior |
 | P5.4 | Validate self-contained folder deployment | A reproducible self-contained folder publish script and local published smoke exist; separate clean Windows x64 validation remains required and is not claimed |
 | P5.5 | Decide single-file support | Keep or reject single-file only after launch, antivirus, extraction, diagnostics, update, and rollback evidence |
-| P5.6 | Add release checklist/CI | Release build, application tests, POC regressions, published smoke, artifact retention, and status limitations are automated/documented |
+| P5.6 | Add release checklist/CI | A focused product verification script covers Release build, application tests, and WPF/WinForms adapter integration; POC regressions, published smoke, artifact retention, and status limitations remain to be assembled into CI |
 
 **P5 completion gate:** A clean-machine result exists, or the release is
 explicitly marked not clean-machine verified. POC-05 Partial and POC-06

@@ -467,6 +467,40 @@ internal static class Program
 
             Assert(unknownActionRejected, "unknown action types are rejected before persistence");
 
+            var invalidDescriptorRejected = false;
+            try
+            {
+                await store.SaveAsync(new WorkflowDocument
+                {
+                    Name = "Invalid descriptor probe",
+                    Actions = new[]
+                    {
+                        new WorkflowAction
+                        {
+                            ActionType = "Invoke",
+                            Description = "Missing target capability metadata",
+                            Target = new TargetDescriptor
+                            {
+                                Process = descriptor.Process,
+                                Window = descriptor.Window,
+                                Element = new ElementDescriptor
+                                {
+                                    ControlType = "ControlType.Button",
+                                    RequiredPatterns = null!
+                                },
+                                Ancestors = Array.Empty<ElementDescriptor>()
+                            }
+                        }
+                    }
+                }, CancellationToken.None);
+            }
+            catch (InvalidDataException)
+            {
+                invalidDescriptorRejected = true;
+            }
+
+            Assert(invalidDescriptorRejected, "incomplete target descriptors are rejected before persistence");
+
             var cancelledSave = new WorkflowDocument
             {
                 Name = "Cancelled save probe",

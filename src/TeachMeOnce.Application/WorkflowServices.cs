@@ -123,6 +123,17 @@ public sealed class JsonWorkflowStore : IWorkflowStore
                 throw new InvalidDataException($"Workflow '{source}' contains an incomplete action.");
             }
 
+            if (action.Target.Process is null
+                || string.IsNullOrWhiteSpace(action.Target.Process.ProcessName)
+                || action.Target.Window is null
+                || string.IsNullOrWhiteSpace(action.Target.Window.ControlType)
+                || string.IsNullOrWhiteSpace(action.Target.Element.ControlType)
+                || action.Target.Element.RequiredPatterns is null
+                || action.Target.Ancestors is null)
+            {
+                throw new InvalidDataException($"Workflow '{source}' contains an incomplete target descriptor.");
+            }
+
             if (!WorkflowSchema.SupportedActionTypes.Contains(action.ActionType))
             {
                 throw new InvalidDataException($"Workflow '{source}' contains unsupported action type '{action.ActionType}'.");

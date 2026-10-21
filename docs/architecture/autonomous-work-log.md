@@ -48,6 +48,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
   target process/control, required UIA patterns, expected state, schema, and
   sensitive-target warnings are reviewable without displaying recorded input
   values.
+- Deduplicated top-level UIA candidates by native HWND during enumeration and
+  descriptor waits so provider wrappers for one actual window cannot create a
+  false ambiguity.
 - Updated the Notepad runbook to accept either `SetValue` or `TextInput`.
 
 ## Verification actually run

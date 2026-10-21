@@ -292,6 +292,7 @@ public sealed class UiAutomationWaiter
     {
         var candidates = AutomationElement.RootElement.FindAll(TreeScope.Children, Condition.TrueCondition);
         var matches = new List<AutomationElement>();
+        var seenHandles = new HashSet<IntPtr>();
         var processMatches = 0;
         var contextMismatches = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (AutomationElement candidate in candidates)
@@ -312,6 +313,11 @@ public sealed class UiAutomationWaiter
 
                 GetWindowThreadProcessId(new IntPtr(nativeHandle.Value), out var nativeProcessId);
                 if (nativeProcessId != processId.Value)
+                {
+                    continue;
+                }
+
+                if (!seenHandles.Add(new IntPtr(nativeHandle.Value)))
                 {
                     continue;
                 }

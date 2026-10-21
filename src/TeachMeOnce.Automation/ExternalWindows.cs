@@ -68,6 +68,7 @@ public sealed class ExternalTargetSelector
     public IReadOnlyList<ExternalWindowCandidate> Enumerate()
     {
         var candidates = new List<ExternalWindowCandidate>();
+        var seenHandles = new HashSet<IntPtr>();
         var root = AutomationElement.RootElement;
         var windows = root.FindAll(TreeScope.Children, Condition.TrueCondition);
         for (var index = 0; index < windows.Count; index++)
@@ -84,6 +85,11 @@ public sealed class ExternalTargetSelector
 
                 var handle = new IntPtr(handleValue.Value);
                 if (!IsWindowVisible(handle))
+                {
+                    continue;
+                }
+
+                if (!seenHandles.Add(handle))
                 {
                     continue;
                 }

@@ -219,6 +219,23 @@ input session, saving a versioned workflow, and replaying it through
 deterministic UI Automation resolution. The built-in demo remains available as
 a regression surface.
 
+Run the product from an interactive Windows desktop with:
+
+```powershell
+dotnet run --project .\src\TeachMeOnce.App\TeachMeOnce.App.csproj --configuration Release
+```
+
+Run the dependency-free application contract checks with:
+
+```powershell
+dotnet run --project .\src\TeachMeOnce.Application.Tests\TeachMeOnce.Application.Tests.csproj --configuration Release
+```
+
+The external Notepad acceptance steps and explicit refusal cases are documented
+in [`docs/architecture/p1-external-workflow.md`](docs/architecture/p1-external-workflow.md).
+The current MVP supports same-integrity targets only; higher-integrity targets,
+ambiguous windows, sensitive text fields, and coordinate fallback are refused.
+
 Build and run it on an interactive Windows desktop:
 
 ```powershell

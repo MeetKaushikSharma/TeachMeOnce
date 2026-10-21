@@ -233,6 +233,18 @@ Run the dependency-free application contract checks with:
 dotnet run --project .\src\TeachMeOnce.Application.Tests\TeachMeOnce.Application.Tests.csproj --configuration Release
 ```
 
+Run the interactive product adapter integration checks against the WPF fixture
+with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Test-ApplicationAdapters.ps1
+```
+
+This verifies the product executor and adapters for Invoke, SetValue, Toggle,
+Select, and ExpandCollapse through real UI Automation targets. Physical global
+hook recording remains a separate acceptance path because injected input is
+intentionally filtered.
+
 The external Notepad acceptance steps and explicit refusal cases are documented
 in [`docs/architecture/p1-external-workflow.md`](docs/architecture/p1-external-workflow.md).
 The current MVP supports same-integrity targets only; higher-integrity targets,

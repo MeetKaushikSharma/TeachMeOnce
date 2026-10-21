@@ -31,7 +31,7 @@ repeatable product slice before broadening scope.
 | P0.2 | Prove restart flow on interactive Windows | Record demo click, Stop/save, close app, relaunch, load workflow, Replay, and observe `Status: invoked` with a completed result |
 | P0.3 | Add a focused restart/replay smoke harness or documented manual evidence | The flow is repeatable from a clean per-user test directory and does not depend on stale `AutomationElement` instances |
 | P0.4 | Correct result/diagnostic fidelity | Cancellation, timeout, zero matches, duplicate matches, context mismatch, unsupported pattern, and provider error remain distinguishable in the UI/log |
-| P0.5 | Review current synchronous diagnostics and verification polling | No blocking work runs on the WPF thread; file/log paths are user-scoped; verification has bounded timeout and cancellation |
+| P0.5 | Review current synchronous diagnostics and verification polling | No blocking work runs on the WPF thread; file/log paths are user-scoped; verification has bounded timeout and cancellation; cancelled atomic saves clean up temporary files |
 
 **P0 completion gate:** Release build, dependency-free application tests, and
 the interactive restart flow pass. No new action type or external-process

@@ -68,12 +68,22 @@ public sealed class JsonWorkflowStore : IWorkflowStore
         Directory.CreateDirectory(_directory);
         var path = Path.Combine(_directory, $"{workflow.Id:N}.json");
         var temporaryPath = path + ".tmp";
-        await using (var stream = File.Create(temporaryPath))
+        try
         {
-            await JsonSerializer.SerializeAsync(stream, workflow, JsonOptions, cancellationToken);
-        }
+            await using (var stream = File.Create(temporaryPath))
+            {
+                await JsonSerializer.SerializeAsync(stream, workflow, JsonOptions, cancellationToken);
+            }
 
-        File.Move(temporaryPath, path, true);
+            File.Move(temporaryPath, path, true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+        }
     }
 
     public Task<bool> DeleteAsync(Guid workflowId, CancellationToken cancellationToken)

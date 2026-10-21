@@ -443,6 +443,26 @@ internal static class Program
             Assert(await store.DeleteAsync(deleteProbe.Id, CancellationToken.None), "workflow deletion removes an existing workflow file");
             Assert(!await store.DeleteAsync(deleteProbe.Id, CancellationToken.None), "workflow deletion reports a missing file without guessing");
 
+            var cancelledSave = new WorkflowDocument
+            {
+                Name = "Cancelled save probe",
+                Actions = workflow.Actions
+            };
+            using var saveCancellation = new CancellationTokenSource();
+            saveCancellation.Cancel();
+            var cancelledSaveObserved = false;
+            try
+            {
+                await store.SaveAsync(cancelledSave, saveCancellation.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                cancelledSaveObserved = true;
+            }
+
+            Assert(cancelledSaveObserved, "cancelled workflow saves report cancellation");
+            Assert(!Directory.EnumerateFiles(root, "*.tmp").Any(), "cancelled workflow saves clean up their temporary file");
+
             using var hookSession = new InputHookSession(1);
             Assert(!hookSession.IsRunning, "a recording hook session is idle before start");
 

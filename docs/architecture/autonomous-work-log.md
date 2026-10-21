@@ -60,6 +60,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Added safe workflow deletion: the library asks for confirmation, deletes only
   the selected workflow ID, reports missing files explicitly, and never touches
   the attached target application.
+- Hardened atomic workflow saves so cancellation or serialization failure removes
+  the temporary file instead of leaving stale `.tmp` artifacts; the contract
+  test now exercises cancellation cleanup.
 - Updated the Notepad runbook to accept either `SetValue` or `TextInput`.
 
 ## Verification actually run

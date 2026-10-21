@@ -12,6 +12,7 @@ namespace TeachMeOnce.App;
 
 public partial class MainWindow : Window
 {
+    private const int MaximumVisibleDiagnostics = 500;
     private readonly DiagnosticLog _diagnostics;
     private readonly IWorkflowStore _workflowStore;
     private readonly IWorkflowRecorder _recorder;
@@ -267,7 +268,20 @@ public partial class MainWindow : Window
 
     private void Diagnostics_OnEntryAdded(object? sender, DiagnosticEntry entry)
     {
-        Dispatcher.Invoke(() => DiagnosticList.Items.Add($"[{entry.Level}] {entry.Message}"));
+        if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+        {
+            return;
+        }
+
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            while (DiagnosticList.Items.Count >= MaximumVisibleDiagnostics)
+            {
+                DiagnosticList.Items.RemoveAt(0);
+            }
+
+            DiagnosticList.Items.Add($"[{entry.Level}] {entry.Message}");
+        }));
     }
 
     private void WorkflowList_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

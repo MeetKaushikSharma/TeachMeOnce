@@ -54,6 +54,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Enforced adapter capability declarations against persisted target descriptor
   metadata before replay waits or execution. Malformed actions can no longer
   omit their required UIA pattern and rely on a later provider-side failure.
+- Bounded the visible WPF diagnostic list to 500 entries and changed cross-thread
+  diagnostic presentation to guarded asynchronous dispatch, preventing a
+  long-running session or shutdown race from blocking the producer.
 - Updated the Notepad runbook to accept either `SetValue` or `TextInput`.
 
 ## Verification actually run
@@ -85,15 +88,24 @@ POC-02 was not rerun because its previously successful evidence remains valid
 for the unchanged hook/correlation behavior; the current edits affect replay
 and target waiting rather than the capture implementation.
 
+Additional fixture capability inspection confirmed:
+
+- WPF `ToggleCheckBox` exposes `TogglePattern` and starts `Off`.
+- WPF `ListItemTwo` exposes `SelectionItemPattern` and starts unselected.
+- WPF `ExpandableSection` exposes `ExpandCollapsePattern` and starts
+  `Collapsed`.
+- WinForms `ToggleCheckBox` exposes `TogglePattern`.
+
+These are capability checks only; physical-input recording and full adapter
+replay against those fixtures remain interactive acceptance work.
+
 ## Remaining work
 
-1. Review the full diff and create a cohesive commit for the verified P1/P2.1
-   increment.
-2. Run interactive WPF/WinForms Toggle recording and replay evidence; injected
+1. Run interactive WPF/WinForms Toggle recording and replay evidence; injected
    SendInput is intentionally filtered by the recorder and is not a substitute
    for physical input acceptance.
-3. Add fixture coverage for adapter execution and stale-provider retry paths,
+2. Add fixture coverage for adapter execution and stale-provider retry paths,
    keeping the existing dependency-free test boundary.
-4. Add interactive fixture evidence for physical Select and ExpandCollapse
+3. Add interactive fixture evidence for physical Select and ExpandCollapse
    recording, then audit replay cancellation and UI recovery before starting
    another action type.

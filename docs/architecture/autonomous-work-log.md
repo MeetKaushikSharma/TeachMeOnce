@@ -51,6 +51,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Deduplicated top-level UIA candidates by native HWND during enumeration and
   descriptor waits so provider wrappers for one actual window cannot create a
   false ambiguity.
+- Enforced adapter capability declarations against persisted target descriptor
+  metadata before replay waits or execution. Malformed actions can no longer
+  omit their required UIA pattern and rely on a later provider-side failure.
 - Updated the Notepad runbook to accept either `SetValue` or `TextInput`.
 
 ## Verification actually run

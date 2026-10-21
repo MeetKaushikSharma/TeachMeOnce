@@ -68,6 +68,8 @@ internal static class Program
             Assert(toggleAdapter!.RequiredPatterns.Contains("Toggle"), "Toggle declares its required UIA pattern");
             Assert(selectAdapter!.RequiredPatterns.Contains("SelectionItem"), "Select declares its required UIA pattern");
             Assert(expandCollapseAdapter!.RequiredPatterns.Contains("ExpandCollapse"), "ExpandCollapse declares its required UIA pattern");
+            Assert(actionRegistry.IsDescriptorCompatible(invokeAdapter, descriptor.Element), "Invoke descriptors must declare Invoke capability");
+            Assert(!actionRegistry.IsDescriptorCompatible(toggleAdapter, descriptor.Element), "Toggle descriptors without Toggle capability are rejected");
 
             var secondWorkflow = new WorkflowDocument
             {

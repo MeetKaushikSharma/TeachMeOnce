@@ -316,6 +316,15 @@ public sealed class UiAutomationWorkflowExecutor : IWorkflowExecutor
                     return Result(ExecutionStatus.Unsupported, $"Action type '{action.ActionType}' is not supported.", completedActionCount, started);
                 }
 
+                if (!_adapters.IsDescriptorCompatible(adapter, action.Target.Element))
+                {
+                    return Result(
+                        ExecutionStatus.Unsupported,
+                        $"Action type '{action.ActionType}' requires UI Automation capabilities that are absent from the persisted target descriptor.",
+                        completedActionCount,
+                        started);
+                }
+
                 var windowResult = await WaitForActionWindowAsync(action.Target, TimeSpan.FromSeconds(5), cancellationToken);
                 if (windowResult.Status != WaitStatus.Satisfied || windowResult.Value is null)
                 {

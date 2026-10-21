@@ -1,6 +1,7 @@
 using System.Windows.Automation;
 using System.Runtime.InteropServices;
 using TeachMeOnce.Automation;
+using TeachMeOnce.TargetResolution;
 
 namespace TeachMeOnce.Application;
 
@@ -50,6 +51,24 @@ public sealed class WorkflowActionAdapterRegistry
     public bool TryGet(string actionType, out IWorkflowActionAdapter? adapter)
     {
         return _adapters.TryGetValue(actionType, out adapter);
+    }
+
+    public bool IsDescriptorCompatible(IWorkflowActionAdapter adapter, ElementDescriptor descriptor)
+    {
+        return adapter.RequiredPatterns.All(required => required switch
+        {
+            "Text or Value" => HasPattern(descriptor, "Text") || HasPattern(descriptor, "Value"),
+            _ => HasPattern(descriptor, required)
+        });
+    }
+
+    private static bool HasPattern(ElementDescriptor descriptor, string required)
+    {
+        return descriptor.RequiredPatterns.Any(actual =>
+            string.Equals(actual, required, StringComparison.Ordinal)
+            || string.Equals(actual, required + "Pattern", StringComparison.Ordinal)
+            || actual.EndsWith("." + required, StringComparison.Ordinal)
+            || actual.EndsWith("." + required + "Pattern", StringComparison.Ordinal));
     }
 
     private static IEnumerable<IWorkflowActionAdapter> CreateDefaultAdapters()

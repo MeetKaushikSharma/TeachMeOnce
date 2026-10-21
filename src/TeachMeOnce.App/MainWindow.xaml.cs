@@ -270,6 +270,39 @@ public partial class MainWindow : Window
         Dispatcher.Invoke(() => DiagnosticList.Items.Add($"[{entry.Level}] {entry.Message}"));
     }
 
+    private void WorkflowList_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (WorkflowList.SelectedItem is not WorkflowDocument workflow)
+        {
+            WorkflowDetailsText.Text = "Select a workflow to review its safe action details.";
+            return;
+        }
+
+        var details = new List<string>
+        {
+            $"{workflow.Actions.Count} action(s) · schema {workflow.SchemaVersion}"
+        };
+
+        for (var index = 0; index < workflow.Actions.Count; index++)
+        {
+            var action = workflow.Actions[index];
+            var element = action.Target.Element;
+            var sensitive = RecordingActionBuilder.RecordingPrivacyPolicy.IsSensitive(
+                element,
+                RecordingActionBuilder.RecordingPrivacyPolicy.DefaultSensitiveNames);
+            var capabilityText = element.RequiredPatterns.Count == 0
+                ? "no recorded pattern metadata"
+                : string.Join(", ", element.RequiredPatterns);
+            var stateText = action.ExpectedValue is null ? string.Empty : $"; expected={action.ExpectedValue}";
+            var riskText = sensitive ? "; sensitive target: values are not displayed" : string.Empty;
+            details.Add(
+                $"{index + 1}. {action.ActionType}: {action.Description}{stateText}{riskText}\n" +
+                $"   Process={action.Target.Process.ProcessName}; control={element.ControlType}; patterns={capabilityText}");
+        }
+
+        WorkflowDetailsText.Text = string.Join(Environment.NewLine, details);
+    }
+
     private void Window_OnClosing(object? sender, CancelEventArgs e)
     {
         _replayCancellation?.Cancel();

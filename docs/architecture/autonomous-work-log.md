@@ -44,6 +44,10 @@ one visible Notepad window; physical-input recording remains manual evidence.
   session. Recording persists the observed `Expanded` or `Collapsed` state;
   replay is idempotent when already at the desired state, otherwise performs
   one explicit expand/collapse operation and verifies the resulting state.
+- Improved the workflow library panel with safe action details: action type,
+  target process/control, required UIA patterns, expected state, schema, and
+  sensitive-target warnings are reviewable without displaying recorded input
+  values.
 - Updated the Notepad runbook to accept either `SetValue` or `TextInput`.
 
 ## Verification actually run

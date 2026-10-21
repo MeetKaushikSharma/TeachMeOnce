@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Interop;
+using Microsoft.Win32;
 using TeachMeOnce.Automation;
 using TeachMeOnce.Application;
 using TeachMeOnce.TargetResolution;
@@ -287,6 +288,7 @@ public partial class MainWindow : Window
     private void WorkflowList_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         DeleteWorkflowButton.IsEnabled = WorkflowList.SelectedItem is WorkflowDocument;
+        ExportWorkflowButton.IsEnabled = WorkflowList.SelectedItem is WorkflowDocument;
         if (WorkflowList.SelectedItem is not WorkflowDocument workflow)
         {
             WorkflowDetailsText.Text = "Select a workflow to review its safe action details.";
@@ -359,6 +361,86 @@ public partial class MainWindow : Window
             SetState("Error: workflow delete failed");
             _diagnostics.Write("Error", "Workflow delete failed.", exception);
         }
+    }
+
+    private async void ExportWorkflowButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (WorkflowList.SelectedItem is not WorkflowDocument workflow)
+        {
+            SetState("Export unavailable: select a workflow");
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Title = "Export workflow",
+            Filter = "TeachMeOnce workflow (*.json)|*.json|All files (*.*)|*.*",
+            FileName = $"{SanitizeFileName(workflow.Name)}.json",
+            AddExtension = true,
+            DefaultExt = ".json",
+            OverwritePrompt = true
+        };
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await _workflowStore.ExportAsync(workflow, dialog.FileName, CancellationToken.None);
+            SetState("Exported: workflow JSON was written safely");
+            _diagnostics.Write("Info", $"Exported workflow '{workflow.Name}'.");
+        }
+        catch (Exception exception)
+        {
+            SetState("Error: workflow export failed");
+            _diagnostics.Write("Error", "Workflow export failed.", exception);
+        }
+    }
+
+    private async void ImportWorkflowButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Import workflow",
+            Filter = "TeachMeOnce workflow (*.json)|*.json|All files (*.*)|*.*",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var imported = await _workflowStore.ImportAsync(dialog.FileName, CancellationToken.None);
+            var workflow = new WorkflowDocument
+            {
+                Id = Guid.NewGuid(),
+                SchemaVersion = imported.SchemaVersion,
+                Name = imported.Name,
+                Actions = imported.Actions
+            };
+            await _workflowStore.SaveAsync(workflow, CancellationToken.None);
+            _workflows.Add(workflow);
+            WorkflowList.Items.Refresh();
+            WorkflowList.SelectedItem = workflow;
+            SetState("Imported: workflow validated and added to the library");
+            _diagnostics.Write("Info", $"Imported workflow '{workflow.Name}' with a new library identity.");
+        }
+        catch (Exception exception)
+        {
+            SetState("Error: workflow import was rejected");
+            _diagnostics.Write("Error", "Workflow import was rejected; the library was unchanged.", exception);
+        }
+    }
+
+    private static string SanitizeFileName(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var sanitized = new string(name.Select(character => invalid.Contains(character) ? '_' : character).ToArray()).Trim();
+        return string.IsNullOrWhiteSpace(sanitized) ? "workflow" : sanitized;
     }
 
     private void Window_OnClosing(object? sender, CancelEventArgs e)

@@ -443,6 +443,13 @@ internal static class Program
             Assert(await store.DeleteAsync(deleteProbe.Id, CancellationToken.None), "workflow deletion removes an existing workflow file");
             Assert(!await store.DeleteAsync(deleteProbe.Id, CancellationToken.None), "workflow deletion reports a missing file without guessing");
 
+            var transferPath = Path.Combine(root, "exports", "toggle-export.json");
+            await store.ExportAsync(toggleWorkflow, transferPath, CancellationToken.None);
+            var importedWorkflow = await store.ImportAsync(transferPath, CancellationToken.None);
+            Assert(importedWorkflow.Name == toggleWorkflow.Name, "exported workflow metadata survives import");
+            Assert(importedWorkflow.Actions[0].ExpectedValue == "On", "exported workflow action state survives import");
+            Assert(!Directory.EnumerateFiles(Path.GetDirectoryName(transferPath)!, "*.tmp").Any(), "workflow export cleans up its temporary file");
+
             var unknownActionRejected = false;
             try
             {

@@ -99,6 +99,52 @@ public sealed class JsonWorkflowStore : IWorkflowStore
         return Task.FromResult(true);
     }
 
+    public async Task ExportAsync(WorkflowDocument workflow, string destinationPath, CancellationToken cancellationToken)
+    {
+        Validate(workflow, destinationPath);
+        if (string.IsNullOrWhiteSpace(destinationPath))
+        {
+            throw new ArgumentException("An export path is required.", nameof(destinationPath));
+        }
+
+        var path = Path.GetFullPath(destinationPath);
+        var directory = Path.GetDirectoryName(path)
+            ?? throw new InvalidDataException("The export path has no parent directory.");
+        Directory.CreateDirectory(directory);
+        var temporaryPath = path + ".tmp";
+        try
+        {
+            await using (var stream = File.Create(temporaryPath))
+            {
+                await JsonSerializer.SerializeAsync(stream, workflow, JsonOptions, cancellationToken);
+            }
+
+            File.Move(temporaryPath, path, true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+        }
+    }
+
+    public async Task<WorkflowDocument> ImportAsync(string sourcePath, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePath))
+        {
+            throw new ArgumentException("An import path is required.", nameof(sourcePath));
+        }
+
+        var path = Path.GetFullPath(sourcePath);
+        await using var stream = File.OpenRead(path);
+        var workflow = await JsonSerializer.DeserializeAsync<WorkflowDocument>(stream, JsonOptions, cancellationToken)
+            ?? throw new InvalidDataException($"Workflow file '{path}' was empty.");
+        Validate(workflow, path);
+        return workflow;
+    }
+
     private static void Validate(WorkflowDocument workflow, string source)
     {
         if (workflow.SchemaVersion != WorkflowSchema.CurrentVersion)

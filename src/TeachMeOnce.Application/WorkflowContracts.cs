@@ -165,6 +165,8 @@ public interface IWorkflowStore
     Task<WorkflowLoadResult> LoadAsync(CancellationToken cancellationToken);
     Task SaveAsync(WorkflowDocument workflow, CancellationToken cancellationToken);
     Task<bool> DeleteAsync(Guid workflowId, CancellationToken cancellationToken);
+    Task ExportAsync(WorkflowDocument workflow, string destinationPath, CancellationToken cancellationToken);
+    Task<WorkflowDocument> ImportAsync(string sourcePath, CancellationToken cancellationToken);
 }
 
 public sealed class WorkflowLoadResult

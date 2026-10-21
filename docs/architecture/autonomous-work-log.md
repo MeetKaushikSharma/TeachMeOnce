@@ -66,6 +66,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Centralized the version-1 action vocabulary and made persistence reject
   unknown action types before writing them. Replay still retains registry-level
   rejection for workflows supplied through alternate stores.
+- Added validated workflow export/import with atomic temporary-file cleanup and
+  a fresh library identity on import, plus confirmation-backed deletion in the
+  WPF workflow library.
 - Strengthened workflow persistence validation for missing process/window/element
   descriptor fields and missing pattern/ancestor metadata; invalid descriptors
   now fail before they can reach UIA replay.
@@ -96,6 +99,9 @@ The Release product executable was also launched from
 reached the `TeachMeOnce` main window, and closed with exit code `0`. This
 verified the updated workflow-library XAML and startup/load path, but not a new
 physical-input acceptance run.
+
+After adding the import/export controls, the same Release product startup
+smoke again reached the `TeachMeOnce` main window and exited with code `0`.
 
 An automated UIA replay probe was first refused as
 `Ambiguous: Multiple top-level windows matched process 'Notepad' and its window

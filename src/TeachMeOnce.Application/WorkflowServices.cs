@@ -123,6 +123,11 @@ public sealed class JsonWorkflowStore : IWorkflowStore
                 throw new InvalidDataException($"Workflow '{source}' contains an incomplete action.");
             }
 
+            if (!WorkflowSchema.SupportedActionTypes.Contains(action.ActionType))
+            {
+                throw new InvalidDataException($"Workflow '{source}' contains unsupported action type '{action.ActionType}'.");
+            }
+
             if (string.Equals(action.ActionType, "SetValue", StringComparison.Ordinal)
                 || string.Equals(action.ActionType, "TextInput", StringComparison.Ordinal))
             {

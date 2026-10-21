@@ -443,6 +443,30 @@ internal static class Program
             Assert(await store.DeleteAsync(deleteProbe.Id, CancellationToken.None), "workflow deletion removes an existing workflow file");
             Assert(!await store.DeleteAsync(deleteProbe.Id, CancellationToken.None), "workflow deletion reports a missing file without guessing");
 
+            var unknownActionRejected = false;
+            try
+            {
+                await store.SaveAsync(new WorkflowDocument
+                {
+                    Name = "Unknown action probe",
+                    Actions = new[]
+                    {
+                        new WorkflowAction
+                        {
+                            ActionType = "UnknownAction",
+                            Description = "Should not persist",
+                            Target = descriptor
+                        }
+                    }
+                }, CancellationToken.None);
+            }
+            catch (InvalidDataException)
+            {
+                unknownActionRejected = true;
+            }
+
+            Assert(unknownActionRejected, "unknown action types are rejected before persistence");
+
             var cancelledSave = new WorkflowDocument
             {
                 Name = "Cancelled save probe",

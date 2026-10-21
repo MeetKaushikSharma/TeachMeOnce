@@ -79,7 +79,7 @@ observable replay.
 | P2.1 | Define action adapter interface and action registry | Each action declares required UIA patterns, preconditions, execution, verification, and failure mapping; unknown action types and descriptors missing declared capabilities are rejected |
 | P2.2 | Add `SetValue`, `Toggle`, `Select`, and `ExpandCollapse` adapters | `SetValue`, `Toggle`, `Select`, and `ExpandCollapse` are implemented with enabled/pattern checks, explicit expected state, cancellation, and bounded postcondition verification |
 | P2.3 | Separate target context from action payload | Descriptors have process/window/ancestor context; action payload contains only type-specific data; no COM/UIA objects serialize |
-| P2.4 | Add schema migration registry | Version 1 remains readable; future changes use pure versioned migrations with fixture files; unknown future versions are rejected |
+| P2.4 | Add schema migration registry | Version 1 remains readable and its action vocabulary is validated; future changes use pure versioned migrations with fixture files; unknown future versions are rejected |
 | P2.5 | Improve stale-provider and retry policy | Only known stale-provider failures may reacquire the same descriptor within a bounded count; ambiguity and unsafe context never retry elsewhere |
 | P2.6 | Add multi-action workflow execution | Replay reports current action, completed count, cancellation, partial failure, and verification result without hiding the failed action |
 

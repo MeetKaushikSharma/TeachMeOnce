@@ -63,6 +63,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Hardened atomic workflow saves so cancellation or serialization failure removes
   the temporary file instead of leaving stale `.tmp` artifacts; the contract
   test now exercises cancellation cleanup.
+- Centralized the version-1 action vocabulary and made persistence reject
+  unknown action types before writing them. Replay still retains registry-level
+  rejection for workflows supplied through alternate stores.
 - Updated the Notepad runbook to accept either `SetValue` or `TextInput`.
 
 ## Verification actually run

@@ -8,6 +8,17 @@ public static class WorkflowSchema
 {
     public const int CurrentVersion = 1;
 
+    public static readonly IReadOnlySet<string> SupportedActionTypes =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Invoke",
+            "SetValue",
+            "TextInput",
+            "Toggle",
+            "Select",
+            "ExpandCollapse"
+        };
+
     public static readonly IReadOnlySet<string> SupportedToggleStates =
         new HashSet<string>(StringComparer.Ordinal)
         {

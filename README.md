@@ -1,8 +1,9 @@
 # TeachMeOnce
 
 TeachMeOnce is a Windows desktop automation platform under development. The
-current milestone is **POC-08: clean deployment validation**. It is deliberately a
-small research harness, not the product recorder or replay engine.
+current milestone is the **first TeachMeOnce application vertical slice**. The
+isolated POC fixtures remain as regression evidence; the product shell and
+workflow services are under `src/TeachMeOnce.App` and `src/TeachMeOnce.Application`.
 
 ## Prerequisites
 
@@ -205,5 +206,41 @@ are in [`docs/feasibility/deployment.md`](docs/feasibility/deployment.md).
 
 After POC-08 verification, stop adding exploratory POCs and use
 [`docs/architecture/integrated-architecture-backlog.md`](docs/architecture/integrated-architecture-backlog.md)
-to plan the integrated application. The main application is not implemented by
-this task.
+to guide the integrated application implementation.
+
+## TeachMeOnce desktop application
+
+The product now begins at `src/TeachMeOnce.App`, with reusable application
+services in `src/TeachMeOnce.Application` and UI Automation boundaries in
+`src/TeachMeOnce.Automation`. The product slice also supports explicitly
+selecting and attaching to a running same-integrity external window, recording
+semantic Invoke and non-sensitive SetValue actions through a bounded global
+input session, saving a versioned workflow, and replaying it through
+deterministic UI Automation resolution. The built-in demo remains available as
+a regression surface.
+
+Build and run it on an interactive Windows desktop:
+
+```powershell
+dotnet build .\TeachMeOnce.sln --configuration Release
+dotnet run --project .\src\TeachMeOnce.App\TeachMeOnce.App.csproj --configuration Release
+```
+
+Run the persistence/schema tests:
+
+```powershell
+dotnet run --project .\src\TeachMeOnce.Application.Tests\TeachMeOnce.Application.Tests.csproj --configuration Release --no-build
+```
+
+For the P1 interactive acceptance flow, start Notepad before launching the
+application, press **Refresh**, select the Notepad window, press **Attach**, and
+then use **Record**. Type ordinary non-sensitive text in Notepad, press
+**Stop**, close and reopen Notepad without saving, select the saved workflow,
+and press **Replay**. The workflow must report completion only after the
+resolved Notepad edit control reaches the recorded value. Passwords, tokens,
+and configured sensitive controls are refused and never persisted.
+
+Architecture and limitations are documented in
+[`docs/architecture/first-vertical-slice.md`](docs/architecture/first-vertical-slice.md)
+and the P1 acceptance steps are in
+[`docs/architecture/p1-external-workflow.md`](docs/architecture/p1-external-workflow.md).

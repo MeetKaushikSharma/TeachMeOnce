@@ -1,7 +1,11 @@
 # Integrated application architecture backlog after POC-08
 
-POC-08 is the final exploratory feasibility checkpoint. This document is a
-planning handoff only; it does not implement the main TeachMeOnce application.
+POC-08 is the final exploratory feasibility checkpoint. This document remains
+the concise post-POC direction record. The detailed architecture is in
+[`system-architecture.md`](system-architecture.md), the accepted decisions are
+in [`adr/`](adr/), and the executable implementation order is in
+[`implementation-backlog.md`](implementation-backlog.md). The first product
+vertical slice now exists; the unchecked items below remain future work.
 
 ## Architecture direction
 
@@ -29,10 +33,10 @@ planning handoff only; it does not implement the main TeachMeOnce application.
 
 ### Foundation
 
-- [ ] Create the main solution/application shell without changing the isolated
+- [x] Create the main solution/application shell without changing the isolated
   POC fixtures.
-- [ ] Add structured versioned configuration and per-user data/log locations.
-- [ ] Add a central diagnostic/error-reporting contract with sanitized output.
+- [x] Add structured versioned configuration and per-user data/log locations.
+- [x] Add a central diagnostic/error-reporting contract with sanitized output.
 - [ ] Add published-output CI validation using the POC-08 smoke pattern.
 
 ### Recording
@@ -43,9 +47,9 @@ planning handoff only; it does not implement the main TeachMeOnce application.
 
 ### Resolution and execution
 
-- [ ] Integrate deterministic target descriptors and ambiguity rejection from
+- [x] Integrate deterministic target descriptors and ambiguity rejection from
   POC-03.
-- [ ] Integrate cancellable asynchronous waits from POC-04.
+- [x] Integrate cancellable asynchronous waits from POC-04.
 - [ ] Implement action adapters for supported UIA patterns.
 - [ ] Implement guarded custom-rendered fallback as a separate explicit action
   type, not as a semantic-target substitute.

@@ -1,0 +1,78 @@
+<Window x:Class="TeachMeOnce.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="TeachMeOnce"
+        Width="1040"
+        Height="700"
+        MinWidth="820"
+        MinHeight="540"
+        AutomationProperties.AutomationId="TeachMeOnceMainWindow"
+        Loaded="Window_OnLoaded"
+        Closing="Window_OnClosing"
+        Closed="Window_OnClosed">
+  <Grid Margin="20">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <TextBlock Text="TeachMeOnce" FontSize="28" FontWeight="SemiBold" AutomationProperties.AutomationId="ApplicationHeading" />
+    <Grid Grid.Row="1" Margin="0,12,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <ComboBox x:Name="TargetComboBox" DisplayMemberPath="DisplayName" MinWidth="560" AutomationProperties.AutomationId="TargetWindowList" />
+      <Button Grid.Column="1" x:Name="RefreshTargetsButton" Width="100" Margin="8,0,0,0" Content="Refresh" AutomationProperties.AutomationId="RefreshTargetsButton" Click="RefreshTargetsButton_OnClick" />
+      <Button Grid.Column="2" x:Name="AttachButton" Width="120" Margin="8,0,0,0" Content="Attach" AutomationProperties.AutomationId="AttachButton" Click="AttachButton_OnClick" />
+    </Grid>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,16,0,16">
+      <Button x:Name="RecordButton" Width="120" Margin="0,0,8,0" Content="Record" AutomationProperties.AutomationId="RecordButton" Click="RecordButton_OnClick" />
+      <Button x:Name="StopButton" Width="120" Margin="0,0,8,0" Content="Stop" AutomationProperties.AutomationId="StopButton" Click="StopButton_OnClick" IsEnabled="False" />
+      <Button x:Name="ReplayButton" Width="120" Margin="0,0,8,0" Content="Replay" AutomationProperties.AutomationId="ReplayButton" Click="ReplayButton_OnClick" />
+      <Button x:Name="CancelButton" Width="120" Content="Cancel" AutomationProperties.AutomationId="CancelButton" Click="CancelButton_OnClick" IsEnabled="False" />
+    </StackPanel>
+    <Grid Grid.Row="3">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="300" />
+        <ColumnDefinition Width="24" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <GroupBox Header="Workflows" Grid.Column="0">
+        <ListBox x:Name="WorkflowList" Margin="8" DisplayMemberPath="Name" AutomationProperties.AutomationId="WorkflowList" />
+      </GroupBox>
+      <Grid Grid.Column="2">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+                <RowDefinition Height="180" />
+                <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+           <TextBlock Text="Attached target" FontSize="18" FontWeight="SemiBold" />
+           <TextBlock x:Name="StateText" Grid.Row="1" Margin="0,8,0,12" Text="State: Ready" AutomationProperties.AutomationId="ExecutionStateText" />
+           <Grid Grid.Row="2">
+             <Grid.RowDefinitions>
+               <RowDefinition Height="Auto" />
+               <RowDefinition Height="Auto" />
+               <RowDefinition Height="Auto" />
+               <RowDefinition Height="180" />
+               <RowDefinition Height="*" />
+             </Grid.RowDefinitions>
+           <TextBlock x:Name="TargetInfoText" Text="No external target attached. Without an attachment, the built-in semantic demo remains available." TextWrapping="Wrap" AutomationProperties.AutomationId="AttachedTargetInfo" />
+           <Button x:Name="DemoButton" Grid.Row="1" Width="230" Height="44" Margin="0,12,0,0" HorizontalAlignment="Left" Content="Semantic demo button" AutomationProperties.AutomationId="ReplayDemoButton" Click="DemoButton_OnClick" />
+           <TextBlock x:Name="DemoStatusText" Grid.Row="2" Margin="0,12,0,12" Text="Status: ready" AutomationProperties.AutomationId="ReplayDemoStatus" />
+           <GroupBox Grid.Row="3" Header="Recorded steps">
+             <ListBox x:Name="RecordedStepsList" Margin="8" AutomationProperties.AutomationId="RecordedStepsList" />
+           </GroupBox>
+           <GroupBox Grid.Row="4" Header="Diagnostic log">
+             <ListBox x:Name="DiagnosticList" Margin="8" AutomationProperties.AutomationId="DiagnosticLogList" />
+           </GroupBox>
+        </Grid>
+      </Grid>
+    </Grid>
+    <TextBlock Grid.Row="4" Margin="0,16,0,0" Foreground="#666" Text="P1: explicitly attached same-integrity targets, UI Automation first, exactly-one-target resolution." />
+  </Grid>
+</Window>

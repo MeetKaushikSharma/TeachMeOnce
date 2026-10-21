@@ -1,0 +1,368 @@
+using TeachMeOnce.Application;
+using TeachMeOnce.Automation;
+using TeachMeOnce.TargetResolution;
+
+namespace TeachMeOnce.Application.Tests;
+
+internal static class Program
+{
+    private static async Task<int> Main()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "TeachMeOnce-application-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var descriptor = new TargetDescriptor
+            {
+                Process = new ProcessContext
+                {
+                    ProcessId = 42,
+                    ProcessName = "TestProcess",
+                    IdentityPolicy = ProcessIdentityPolicy.ProcessName
+                },
+                Window = new WindowContext { Name = "Test Window", ControlType = "ControlType.Window", MatchName = false },
+                Element = new ElementDescriptor
+                {
+                    AutomationId = "ActionButton",
+                    Name = "Action",
+                    ControlType = "ControlType.Button",
+                    RequiredPatterns = new[] { "Invoke" }
+                },
+                Ancestors = Array.Empty<ElementDescriptor>()
+            };
+            var workflow = new WorkflowDocument
+            {
+                Id = Guid.NewGuid(),
+                Name = "Contract test",
+                Actions = new[]
+                {
+                    new WorkflowAction
+                    {
+                        ActionType = "Invoke",
+                        Description = "Invoke action",
+                        Target = descriptor,
+                        VerificationAutomationId = "StatusText",
+                        ExpectedValue = "Status: invoked"
+                    }
+                }
+            };
+            var store = new JsonWorkflowStore(root);
+            await store.SaveAsync(workflow, CancellationToken.None);
+            var loaded = await store.LoadAsync(CancellationToken.None);
+            Assert(loaded.Workflows.Count == 1, "one workflow round-trips after a simulated restart");
+            Assert(loaded.Workflows[0].SchemaVersion == WorkflowSchema.CurrentVersion, "schema version is preserved");
+            Assert(loaded.Workflows[0].Actions[0].Target.Element.AutomationId == "ActionButton", "target descriptor is preserved");
+            Assert(loaded.Workflows[0].Actions[0].Target.Process.IdentityPolicy == ProcessIdentityPolicy.ProcessName, "restart-safe process identity policy is preserved");
+            Assert(!loaded.Workflows[0].Actions[0].Target.Window.MatchName, "restart-safe external window descriptors can ignore mutable titles");
+
+            var actionRegistry = new WorkflowActionAdapterRegistry();
+            Assert(actionRegistry.TryGet("Invoke", out var invokeAdapter) && invokeAdapter is not null, "the action registry exposes Invoke");
+            Assert(actionRegistry.TryGet("SetValue", out var setValueAdapter) && setValueAdapter is not null, "the action registry exposes SetValue");
+            Assert(actionRegistry.TryGet("TextInput", out var textInputAdapter) && textInputAdapter is not null, "the action registry exposes TextInput");
+            Assert(!actionRegistry.TryGet("UnknownAction", out _), "unknown action types are rejected by the registry");
+            Assert(invokeAdapter!.RequiredPatterns.Contains("Invoke"), "Invoke declares its required UIA pattern");
+            Assert(setValueAdapter!.RequiredPatterns.Contains("Value"), "SetValue declares its required UIA pattern");
+
+            var secondWorkflow = new WorkflowDocument
+            {
+                Name = "Second workflow",
+                Actions = workflow.Actions
+            };
+            await store.SaveAsync(secondWorkflow, CancellationToken.None);
+            var textWorkflow = new WorkflowDocument
+            {
+                Name = "Text workflow",
+                Actions = new[]
+                {
+                    new WorkflowAction
+                    {
+                        ActionType = "SetValue",
+                        Description = "Set ordinary text",
+                        Target = new TargetDescriptor
+                        {
+                            Process = descriptor.Process,
+                            Window = descriptor.Window,
+                            Element = new ElementDescriptor
+                            {
+                                AutomationId = "ValueTextBox",
+                                Name = "Value",
+                                ControlType = "ControlType.Edit",
+                                RequiredPatterns = new[] { "Value" },
+                                MatchName = false
+                            },
+                            Ancestors = Array.Empty<ElementDescriptor>()
+                        },
+                        InputValue = "ordinary text"
+                    }
+                }
+            };
+            await store.SaveAsync(textWorkflow, CancellationToken.None);
+            var multiple = await new JsonWorkflowStore(root).LoadAsync(CancellationToken.None);
+            Assert(multiple.Workflows.Count == 3, "multiple workflows reload together");
+            Assert(multiple.Workflows.Single(workflowItem => workflowItem.Name == "Text workflow").Actions[0].InputValue == "ordinary text", "non-sensitive text action survives persistence");
+            Assert(!multiple.Workflows.Single(workflowItem => workflowItem.Name == "Text workflow").Actions[0].Target.Element.MatchName, "text targets do not depend on mutable control names");
+
+            var textInputWorkflow = new WorkflowDocument
+            {
+                Name = "Text input workflow",
+                Actions = new[]
+                {
+                    new WorkflowAction
+                    {
+                        ActionType = "TextInput",
+                        Description = "Enter ordinary text",
+                        Target = textWorkflow.Actions[0].Target,
+                        InputValue = "ordinary text",
+                        InputMethod = "KeyboardText"
+                    }
+                }
+            };
+            await store.SaveAsync(textInputWorkflow, CancellationToken.None);
+            var textInputReloaded = await store.LoadAsync(CancellationToken.None);
+            Assert(textInputReloaded.Workflows.Single(item => item.Name == "Text input workflow").Actions[0].ActionType == "TextInput", "TextInput actions survive persistence");
+
+            var path = Directory.EnumerateFiles(root, "*.json").First();
+            var json = await File.ReadAllTextAsync(path);
+            var invalidJson = json.Replace("\"schemaVersion\": 1", "\"schemaVersion\": 99", StringComparison.Ordinal);
+            await File.WriteAllTextAsync(path, invalidJson);
+            var invalidResult = await store.LoadAsync(CancellationToken.None);
+            Assert(invalidResult.Workflows.Count == 3, "valid workflows survive an invalid file");
+            Assert(invalidResult.Issues.Count == 1, "unsupported schema versions are reported");
+
+            var malformedPath = Path.Combine(root, "malformed.json");
+            await File.WriteAllTextAsync(malformedPath, "{ not valid json");
+            var malformedResult = await store.LoadAsync(CancellationToken.None);
+            Assert(malformedResult.Workflows.Count == 3, "valid workflows survive malformed JSON");
+            Assert(malformedResult.Issues.Count == 2, "malformed and unsupported files are both reported");
+
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            var executor = new UiAutomationWorkflowExecutor(42, "missing window", new DiagnosticLog());
+            var cancelled = await executor.ExecuteAsync(workflow, cancellation.Token);
+            Assert(cancelled.Status == ExecutionStatus.Cancelled, "pre-cancelled replay is safe");
+            Assert(UiAutomationWorkflowExecutor.MapResolutionStatus(ResolutionStatus.NotFound) == ExecutionStatus.NotFound, "missing targets remain explicit");
+            Assert(UiAutomationWorkflowExecutor.MapResolutionStatus(ResolutionStatus.Ambiguous) == ExecutionStatus.Ambiguous, "ambiguous targets remain explicit");
+            Assert(UiAutomationWorkflowExecutor.MapResolutionStatus(ResolutionStatus.ContextMismatch) == ExecutionStatus.ContextMismatch, "context mismatches remain explicit");
+            Assert(VerificationPolicy.Evaluate(new[] { "Status: invoked" }, "Status: invoked").Outcome == VerificationOutcome.Satisfied, "post-action verification accepts the expected value");
+            Assert(VerificationPolicy.Evaluate(Array.Empty<string?>(), "Status: invoked").Outcome == VerificationOutcome.NotFound, "post-action verification does not guess a missing target");
+            Assert(VerificationPolicy.Evaluate(new[] { "Status: ready" }, "Status: invoked").Outcome == VerificationOutcome.ValueMismatch, "post-action verification rejects an unexpected value");
+            Assert(VerificationPolicy.Evaluate(new[] { "Status: invoked", "Status: invoked" }, "Status: invoked").Outcome == VerificationOutcome.Ambiguous, "post-action verification rejects duplicate targets");
+
+            var diagnosticPath = Path.Combine(root, "diagnostics.log");
+            var diagnostics = new DiagnosticLog(diagnosticPath);
+            diagnostics.Write("Warning", "A password=super-secret and token=abc123 must not be persisted.");
+            await diagnostics.FlushAsync();
+            var diagnosticText = await File.ReadAllTextAsync(diagnosticPath);
+            Assert(!diagnosticText.Contains("super-secret", StringComparison.Ordinal), "diagnostics redact password values");
+            Assert(!diagnosticText.Contains("abc123", StringComparison.Ordinal), "diagnostics redact token values");
+            Assert(diagnosticText.Contains("[REDACTED]", StringComparison.Ordinal), "diagnostics retain a useful redaction marker");
+
+            var sensitiveDescriptor = new ElementDescriptor
+            {
+                AutomationId = "PasswordBox",
+                Name = "Password",
+                ControlType = "ControlType.Edit",
+                IsPassword = true,
+                RequiredPatterns = new[] { "Value" }
+            };
+            Assert(RecordingActionBuilder.RecordingPrivacyPolicy.IsSensitive(
+                sensitiveDescriptor,
+                new HashSet<string>(new[] { "password", "token" }, StringComparer.OrdinalIgnoreCase)),
+                "password controls are classified as sensitive before persistence");
+
+            var invokeDescriptor = new TargetDescriptor
+            {
+                Process = descriptor.Process,
+                Window = descriptor.Window,
+                Element = new ElementDescriptor
+                {
+                    AutomationId = "InvokeButton",
+                    Name = "Invoke",
+                    ControlType = "ControlType.Button",
+                    RequiredPatterns = new[] { "Invoke" }
+                },
+                Ancestors = Array.Empty<ElementDescriptor>()
+            };
+            var targetCandidate = new ExternalWindowCandidate(
+                new IntPtr(123),
+                42,
+                "TestProcess",
+                null,
+                "Test Window",
+                null,
+                "Window",
+                "WPF",
+                "ControlType.Window",
+                new IntegrityInfo(IntegrityLevel.Medium, true, "test"));
+            var externalTarget = new ExternalTarget(targetCandidate, targetCandidate.Integrity, true);
+            var eventData = new CorrelatedInputEvent(
+                new RawInputEvent(2, RawInputKind.Mouse, 0x0201, DateTimeOffset.UtcNow, 2, false, 20, 30, 0, 0, 0, new IntPtr(123), 42, IntPtr.Zero),
+                targetCandidate,
+                invokeDescriptor.Element,
+                null,
+                invokeDescriptor,
+                true,
+                null);
+            var ignoredInjected = eventData with
+            {
+                Input = eventData.Input with { Sequence = 1, Injected = true }
+            };
+            var actionResult = RecordingActionBuilder.Build(
+                externalTarget,
+                new[] { ignoredInjected, eventData, eventData with { Input = eventData.Input with { Sequence = 3 }, BelongsToSelectedTarget = false } },
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                new DiagnosticLog());
+            Assert(actionResult.Actions.Count == 1 && actionResult.Actions[0].ActionType == "Invoke", "recording filters injected events and creates one semantic invoke action");
+
+            var secondInvokeDescriptor = new TargetDescriptor
+            {
+                Process = descriptor.Process,
+                Window = descriptor.Window,
+                Element = new ElementDescriptor
+                {
+                    AutomationId = "SecondButton",
+                    Name = "Second",
+                    ControlType = "ControlType.Button",
+                    RequiredPatterns = new[] { "Invoke" }
+                },
+                Ancestors = Array.Empty<ElementDescriptor>()
+            };
+            var secondEvent = eventData with
+            {
+                Input = eventData.Input with { Sequence = 1 },
+                TargetElement = secondInvokeDescriptor.Element,
+                TargetDescriptor = secondInvokeDescriptor
+            };
+            var ordered = RecordingActionBuilder.Build(
+                externalTarget,
+                new[] { eventData, secondEvent },
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                new DiagnosticLog());
+            Assert(ordered.Actions.Count == 2 && ordered.Actions[0].Description.Contains("Second", StringComparison.Ordinal), "recorded actions are ordered by monotonic sequence");
+
+            var unsafeWorkflow = new WorkflowDocument
+            {
+                Name = "Unsafe text workflow",
+                Actions = new[]
+                {
+                    new WorkflowAction
+                    {
+                        ActionType = "SetValue",
+                        Description = "Unsafe",
+                        Target = new TargetDescriptor
+                        {
+                            Process = descriptor.Process,
+                            Window = descriptor.Window,
+                            Element = sensitiveDescriptor,
+                            Ancestors = Array.Empty<ElementDescriptor>()
+                        },
+                        InputValue = "must-not-persist"
+                    }
+                }
+            };
+            var unsafeSaveRejected = false;
+            try
+            {
+                await store.SaveAsync(unsafeWorkflow, CancellationToken.None);
+            }
+            catch (InvalidDataException)
+            {
+                unsafeSaveRejected = true;
+            }
+
+            Assert(unsafeSaveRejected, "unsafe password text workflows are rejected before persistence");
+
+            var tokenWorkflow = new WorkflowDocument
+            {
+                Name = "Configured-sensitive text workflow",
+                Actions = new[]
+                {
+                    new WorkflowAction
+                    {
+                        ActionType = "SetValue",
+                        Description = "Configured-sensitive text",
+                        Target = new TargetDescriptor
+                        {
+                            Process = descriptor.Process,
+                            Window = descriptor.Window,
+                            Element = new ElementDescriptor
+                            {
+                                AutomationId = "ApiTokenEditor",
+                                Name = "API token",
+                                ControlType = "ControlType.Edit",
+                                RequiredPatterns = new[] { "Value" }
+                            },
+                            Ancestors = Array.Empty<ElementDescriptor>()
+                        },
+                        InputValue = "must-not-persist"
+                    }
+                }
+            };
+            var configuredSensitiveRejected = false;
+            try
+            {
+                await store.SaveAsync(tokenWorkflow, CancellationToken.None);
+            }
+            catch (InvalidDataException)
+            {
+                configuredSensitiveRejected = true;
+            }
+
+            Assert(configuredSensitiveRejected, "configured-sensitive text workflows are rejected before persistence");
+
+            using var hookSession = new InputHookSession(1);
+            Assert(!hookSession.IsRunning, "a recording hook session is idle before start");
+
+            using var queue = new BoundedInputEventQueue(1);
+            var queuedFirst = CreateRawInput(1);
+            var queuedSecond = CreateRawInput(2);
+            Assert(queue.TryEnqueue(queuedFirst), "bounded input queues accept events while capacity is available");
+            Assert(!queue.TryEnqueue(queuedSecond), "bounded input queues reject overflow without blocking the producer");
+            Assert(queue.DroppedCount == 1, "bounded input queues count dropped events");
+            queue.Complete();
+            Assert(queue.ReadAll().Single().Sequence == 1, "bounded input queues preserve event ordering");
+
+            await using var cancelledSession = new ExternalRecordingSession(
+                new ExternalRecordingSessionOptions { Target = externalTarget },
+                new DiagnosticLog());
+            using var cancelledRecording = new CancellationTokenSource();
+            cancelledRecording.Cancel();
+            var cancelledRecordingResult = await cancelledSession.StopAsync(cancelledRecording.Token);
+            Assert(cancelledRecordingResult.Status == RecordingSessionStatus.Cancelled, "recording cancellation has an explicit terminal result");
+
+            Console.WriteLine("TeachMeOnce.Application.Tests passed.");
+            return 0;
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, true);
+            }
+        }
+    }
+
+    private static void Assert(bool condition, string description)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"Assertion failed: {description}");
+        }
+    }
+
+    private static RawInputEvent CreateRawInput(long sequence) => new(
+        sequence,
+        RawInputKind.Mouse,
+        0x0201,
+        DateTimeOffset.UtcNow,
+        sequence,
+        false,
+        0,
+        0,
+        0,
+        0,
+        0,
+        IntPtr.Zero,
+        42,
+        IntPtr.Zero);
+}

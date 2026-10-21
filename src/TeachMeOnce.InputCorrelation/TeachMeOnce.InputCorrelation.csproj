@@ -7,4 +7,7 @@
     <AssemblyName>TeachMeOnce.InputCorrelation</AssemblyName>
     <RootNamespace>TeachMeOnce.InputCorrelation</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TeachMeOnce.Automation\TeachMeOnce.Automation.csproj" />
+  </ItemGroup>
 </Project>

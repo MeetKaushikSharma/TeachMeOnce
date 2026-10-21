@@ -38,8 +38,8 @@ try {
             '--runtime', 'win-x64',
             '--self-contained', $Mode.SelfContained,
             '--output', $Output,
-            '-p:PublishSingleFile=' + $Mode.SingleFile,
-            '-p:IncludeNativeLibrariesForSelfExtract=' + $Mode.NativeSelfExtract,
+            "-p:PublishSingleFile=$($Mode.SingleFile)",
+            "-p:IncludeNativeLibrariesForSelfExtract=$($Mode.NativeSelfExtract)",
             '-p:PublishTrimmed=false',
             '-p:DebugType=None'
         )

@@ -83,10 +83,11 @@ internal static class Program
             var action = FindUnique(window, "DeploymentActionButton");
             var status = FindUnique(window, "DeploymentStatusText");
             var processId = ReadInt(window, AutomationElement.ProcessIdProperty);
-            if (processId != process.Id)
+            if (processId is null || processId.Value != process.Id)
             {
-                throw new InvalidOperationException($"UI Automation process identity mismatch: expected {process.Id}, got {processId}.");
+                throw new InvalidOperationException($"UI Automation process identity mismatch: expected {process.Id}, got {processId?.ToString() ?? "none"}.");
             }
+            var automationProcessId = processId.Value;
 
             if (!action.TryGetCurrentPattern(InvokePattern.Pattern, out var patternObject)
                 || patternObject is not InvokePattern pattern)
@@ -107,7 +108,7 @@ internal static class Program
             }
 
             var statusJson = WaitForFile(statusPath, 3000);
-            var statusRecord = JsonSerializer.Deserialize<DeploymentStatusRecord>(File.ReadAllText(statusJson));
+            var statusRecord = JsonSerializer.Deserialize<DeploymentStatusRecord>(File.ReadAllText(statusJson), JsonOptions);
             var actionConfirmed = string.Equals(ReadString(status, AutomationElement.NameProperty), "Status: action invoked", StringComparison.Ordinal);
             var loggingPassed = File.Exists(logPath) && File.ReadAllText(logPath).Contains("action invoked", StringComparison.Ordinal);
             var writableDataPassed = statusRecord is not null && Directory.Exists(statusRecord.DataDirectory);
@@ -138,7 +139,7 @@ internal static class Program
                 WritableDataPassed = writableDataPassed,
                 LoggingPassed = loggingPassed,
                 ErrorReportingPassed = errorReportingPassed,
-                ApplicationProcessId = processId,
+                ApplicationProcessId = automationProcessId,
                 PublishedFileCount = Directory.EnumerateFiles(applicationDirectory, "*", SearchOption.TopDirectoryOnly).Count()
             };
         }

@@ -1,19 +1,21 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
+using TeachMeOnce.TargetResolution;
 
 namespace TeachMeOnce.AsyncWaits;
 
-internal enum WaitStatus
+public enum WaitStatus
 {
     Satisfied,
     TimedOut,
     Cancelled,
     NotFound,
+    Ambiguous,
     Error
 }
 
-internal sealed class WaitResult<T> where T : class
+public sealed class WaitResult<T> where T : class
 {
     public required WaitStatus Status { get; init; }
     public T? Value { get; init; }
@@ -23,7 +25,7 @@ internal sealed class WaitResult<T> where T : class
     public int UiAutomationErrorCount { get; init; }
 }
 
-internal sealed class UiAutomationWaiter
+public sealed class UiAutomationWaiter
 {
     private readonly TimeSpan _pollInterval;
 
@@ -48,6 +50,74 @@ internal sealed class UiAutomationWaiter
             timeout,
             cancellationToken,
             description: $"window title containing '{titleSubstring}'");
+    }
+
+    public Task<WaitResult<AutomationElement>> WaitForWindowAsync(
+        TargetDescriptor descriptor,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        return WaitForDescriptorWindowAsync(descriptor, timeout, cancellationToken);
+    }
+
+    private async Task<WaitResult<AutomationElement>> WaitForDescriptorWindowAsync(
+        TargetDescriptor descriptor,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        if (timeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timeout), "The timeout must be positive.");
+        }
+
+        var started = Stopwatch.GetTimestamp();
+        var deadline = DateTimeOffset.UtcNow + timeout;
+        var probes = 0;
+        var lastProbeSummary = "no top-level candidates were inspected";
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            probes++;
+            var matches = FindWindows(descriptor, out lastProbeSummary);
+            if (matches.Count > 1)
+            {
+                return new WaitResult<AutomationElement>
+                {
+                    Status = WaitStatus.Ambiguous,
+                    Reason = $"Multiple top-level windows matched process '{descriptor.Process.ProcessName}' and its window context.",
+                    Elapsed = Stopwatch.GetElapsedTime(started),
+                    ProbeCount = probes
+                };
+            }
+
+            if (matches.Count == 1)
+            {
+                return new WaitResult<AutomationElement>
+                {
+                    Status = WaitStatus.Satisfied,
+                    Value = matches[0],
+                    Reason = "Exactly one top-level window matched the selected target context.",
+                    Elapsed = Stopwatch.GetElapsedTime(started),
+                    ProbeCount = probes
+                };
+            }
+
+            var remaining = deadline - DateTimeOffset.UtcNow;
+            if (remaining <= TimeSpan.Zero)
+            {
+                break;
+            }
+
+            await Task.Delay(remaining < _pollInterval ? remaining : _pollInterval, cancellationToken).ConfigureAwait(false);
+        }
+
+        return new WaitResult<AutomationElement>
+        {
+            Status = WaitStatus.TimedOut,
+            Reason = $"Timed out waiting for exactly one top-level window for process '{descriptor.Process.ProcessName}'; {lastProbeSummary}.",
+            Elapsed = Stopwatch.GetElapsedTime(started),
+            ProbeCount = probes
+        };
     }
 
     public Task<WaitResult<AutomationElement>> WaitForElementAsync(
@@ -218,6 +288,115 @@ internal sealed class UiAutomationWaiter
         return null;
     }
 
+    private static IReadOnlyList<AutomationElement> FindWindows(TargetDescriptor descriptor, out string summary)
+    {
+        var candidates = AutomationElement.RootElement.FindAll(TreeScope.Children, Condition.TrueCondition);
+        var matches = new List<AutomationElement>();
+        var processMatches = 0;
+        var contextMismatches = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (AutomationElement candidate in candidates)
+        {
+            try
+            {
+                var processId = ReadInt(candidate, AutomationElement.ProcessIdProperty);
+                if (processId is null)
+                {
+                    continue;
+                }
+
+                var nativeHandle = ReadInt(candidate, AutomationElement.NativeWindowHandleProperty);
+                if (nativeHandle is null or 0 || !IsWindowVisible(new IntPtr(nativeHandle.Value)))
+                {
+                    continue;
+                }
+
+                GetWindowThreadProcessId(new IntPtr(nativeHandle.Value), out var nativeProcessId);
+                if (nativeProcessId != processId.Value)
+                {
+                    continue;
+                }
+
+                var processName = Process.GetProcessById(processId.Value).ProcessName;
+                if (!string.Equals(processName, descriptor.Process.ProcessName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                processMatches++;
+
+                var current = new WindowContext
+                {
+                    AutomationId = ReadString(candidate, AutomationElement.AutomationIdProperty),
+                    Name = ReadString(candidate, AutomationElement.NameProperty),
+                    ClassName = ReadString(candidate, AutomationElement.ClassNameProperty),
+                    FrameworkId = ReadString(candidate, AutomationElement.FrameworkIdProperty),
+                    ControlType = ReadControlType(candidate),
+                    MatchName = descriptor.Window.MatchName
+                };
+
+                if (!MatchesWindow(current, descriptor.Window, out var mismatch))
+                {
+                    contextMismatches[mismatch] = contextMismatches.TryGetValue(mismatch, out var count) ? count + 1 : 1;
+                    continue;
+                }
+
+                matches.Add(candidate);
+            }
+            catch (Exception exception) when (exception is ElementNotAvailableException or ArgumentException or InvalidOperationException)
+            {
+                // The window disappeared while polling; the next poll may find its replacement.
+            }
+        }
+
+        var mismatchSummary = contextMismatches.Count == 0
+            ? "none"
+            : string.Join(", ", contextMismatches.OrderBy(item => item.Key, StringComparer.Ordinal).Select(item => $"{item.Key}={item.Value}"));
+        summary = $"rootCandidates={candidates.Count}, processMatches={processMatches}, contextMismatches={mismatchSummary}";
+        return matches;
+    }
+
+    private static bool MatchesWindow(WindowContext current, WindowContext expected, out string mismatch)
+    {
+        if (expected.AutomationId is not null && current.AutomationId != expected.AutomationId)
+        {
+            mismatch = "automationId";
+            return false;
+        }
+
+        if (expected.MatchName && current.Name != expected.Name)
+        {
+            mismatch = "name";
+            return false;
+        }
+
+        if (expected.ClassName is not null && current.ClassName != expected.ClassName)
+        {
+            mismatch = "className";
+            return false;
+        }
+
+        if (expected.FrameworkId is not null && current.FrameworkId != expected.FrameworkId)
+        {
+            mismatch = "frameworkId";
+            return false;
+        }
+
+        if (current.ControlType != expected.ControlType)
+        {
+            mismatch = "controlType";
+            return false;
+        }
+
+        mismatch = string.Empty;
+        return true;
+    }
+
+    private static string ReadControlType(AutomationElement element)
+    {
+        return (element.GetCurrentPropertyValue(AutomationElement.ControlTypeProperty) as ControlType)
+            ?.ProgrammaticName ?? "Unknown";
+    }
+
     private static bool BelongsToProcess(AutomationElement element, int processId)
     {
         var reportedProcessId = ReadInt(element, AutomationElement.ProcessIdProperty);
@@ -276,4 +455,8 @@ internal sealed class UiAutomationWaiter
 
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr windowHandle, out uint processId);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindowVisible(IntPtr windowHandle);
 }

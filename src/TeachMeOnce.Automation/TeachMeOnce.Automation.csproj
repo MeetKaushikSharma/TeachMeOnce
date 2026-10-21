@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>TeachMeOnce.Automation</AssemblyName>
+    <RootNamespace>TeachMeOnce.Automation</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\TeachMeOnce.TargetResolution\TargetResolution.cs" Link="TargetResolution.cs" />
+    <Compile Include="..\TeachMeOnce.AsyncWaits\UiAutomationWaits.cs" Link="UiAutomationWaits.cs" />
+  </ItemGroup>
+</Project>

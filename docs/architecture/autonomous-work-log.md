@@ -120,6 +120,16 @@ one visible Notepad window; physical-input recording remains manual evidence.
 
 ## Verification actually run
 
+The latest focused product sequence was run after the replay-result and
+diagnostic changes:
+
+```text
+powershell -ExecutionPolicy Bypass -File .\scripts\Test-Product.ps1
+```
+
+It passed the Release solution build, application contract executable, and
+WPF/WinForms adapter integration checks.
+
 From the repository root:
 
 ```text

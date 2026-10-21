@@ -81,6 +81,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Added `scripts/Test-Product.ps1` as a repeatable product verification entry
   point for the Release build, dependency-free contract checks, and WPF/WinForms
   adapter integration checks.
+- Extended dependency-free recording tests to prove that multiple Toggle
+  candidates are refused explicitly instead of attributing one final state to
+  several clicks.
 - Re-ran the published-output deployment regression:
   `powershell -ExecutionPolicy Bypass -File .\scripts\Test-Poc08.ps1`. All four
   FDD/SCD folder/single-file published smoke modes passed UIA, configuration,

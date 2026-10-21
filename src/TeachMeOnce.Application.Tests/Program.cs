@@ -340,6 +340,23 @@ internal static class Program
                 new DiagnosticLog());
             Assert(actionResult.Actions.Count == 1 && actionResult.Actions[0].ActionType == "Invoke", "recording filters injected events and creates one semantic invoke action");
 
+            var toggleCandidate = eventData with
+            {
+                TargetElement = toggleWorkflow.Actions[0].Target.Element,
+                TargetDescriptor = toggleWorkflow.Actions[0].Target
+            };
+            var multipleToggleResult = RecordingActionBuilder.Build(
+                externalTarget,
+                new[]
+                {
+                    toggleCandidate with { Input = eventData.Input with { Sequence = 10 } },
+                    toggleCandidate with { Input = eventData.Input with { Sequence = 11 } }
+                },
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                new DiagnosticLog());
+            Assert(multipleToggleResult.Actions.Count == 0, "multiple toggle candidates do not produce an attributed action");
+            Assert(multipleToggleResult.Stages?.Rejections.Keys.Any(reason => reason.Contains("multiple toggle candidates", StringComparison.Ordinal)) == true, "multiple toggle candidates report an explicit refusal");
+
             var secondInvokeDescriptor = new TargetDescriptor
             {
                 Process = descriptor.Process,

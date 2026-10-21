@@ -434,6 +434,15 @@ internal static class Program
 
             Assert(configuredSensitiveRejected, "configured-sensitive text workflows are rejected before persistence");
 
+            var deleteProbe = new WorkflowDocument
+            {
+                Name = "Delete probe",
+                Actions = workflow.Actions
+            };
+            await store.SaveAsync(deleteProbe, CancellationToken.None);
+            Assert(await store.DeleteAsync(deleteProbe.Id, CancellationToken.None), "workflow deletion removes an existing workflow file");
+            Assert(!await store.DeleteAsync(deleteProbe.Id, CancellationToken.None), "workflow deletion reports a missing file without guessing");
+
             using var hookSession = new InputHookSession(1);
             Assert(!hookSession.IsRunning, "a recording hook session is idle before start");
 

@@ -57,6 +57,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Bounded the visible WPF diagnostic list to 500 entries and changed cross-thread
   diagnostic presentation to guarded asynchronous dispatch, preventing a
   long-running session or shutdown race from blocking the producer.
+- Added safe workflow deletion: the library asks for confirmation, deletes only
+  the selected workflow ID, reports missing files explicitly, and never touches
+  the attached target application.
 - Updated the Notepad runbook to accept either `SetValue` or `TextInput`.
 
 ## Verification actually run

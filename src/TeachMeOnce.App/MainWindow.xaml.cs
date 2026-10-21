@@ -286,6 +286,7 @@ public partial class MainWindow : Window
 
     private void WorkflowList_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
+        DeleteWorkflowButton.IsEnabled = WorkflowList.SelectedItem is WorkflowDocument;
         if (WorkflowList.SelectedItem is not WorkflowDocument workflow)
         {
             WorkflowDetailsText.Text = "Select a workflow to review its safe action details.";
@@ -315,6 +316,49 @@ public partial class MainWindow : Window
         }
 
         WorkflowDetailsText.Text = string.Join(Environment.NewLine, details);
+    }
+
+    private async void DeleteWorkflowButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (WorkflowList.SelectedItem is not WorkflowDocument workflow)
+        {
+            SetState("Delete unavailable: select a workflow");
+            return;
+        }
+
+        var confirmation = MessageBox.Show(
+            this,
+            $"Delete workflow '{workflow.Name}'? This removes the saved workflow but does not affect the target application.",
+            "Delete workflow",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+        if (confirmation != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!await _workflowStore.DeleteAsync(workflow.Id, CancellationToken.None))
+            {
+                SetState("Delete failed: workflow file was not found");
+                _diagnostics.Write("Warning", $"Workflow delete skipped because '{workflow.Name}' was not found.");
+                return;
+            }
+
+            _workflows.Remove(workflow);
+            WorkflowList.Items.Refresh();
+            WorkflowList.SelectedItem = null;
+            DeleteWorkflowButton.IsEnabled = false;
+            SetState("Deleted: workflow removed from the library");
+            _diagnostics.Write("Info", $"Deleted workflow '{workflow.Name}'.");
+        }
+        catch (Exception exception)
+        {
+            SetState("Error: workflow delete failed");
+            _diagnostics.Write("Error", "Workflow delete failed.", exception);
+        }
     }
 
     private void Window_OnClosing(object? sender, CancelEventArgs e)

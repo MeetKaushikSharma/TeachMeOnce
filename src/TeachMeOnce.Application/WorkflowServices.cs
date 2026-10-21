@@ -76,6 +76,19 @@ public sealed class JsonWorkflowStore : IWorkflowStore
         File.Move(temporaryPath, path, true);
     }
 
+    public Task<bool> DeleteAsync(Guid workflowId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var path = Path.Combine(_directory, $"{workflowId:N}.json");
+        if (!File.Exists(path))
+        {
+            return Task.FromResult(false);
+        }
+
+        File.Delete(path);
+        return Task.FromResult(true);
+    }
+
     private static void Validate(WorkflowDocument workflow, string source)
     {
         if (workflow.SchemaVersion != WorkflowSchema.CurrentVersion)

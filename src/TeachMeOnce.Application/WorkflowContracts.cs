@@ -153,6 +153,7 @@ public interface IWorkflowStore
 {
     Task<WorkflowLoadResult> LoadAsync(CancellationToken cancellationToken);
     Task SaveAsync(WorkflowDocument workflow, CancellationToken cancellationToken);
+    Task<bool> DeleteAsync(Guid workflowId, CancellationToken cancellationToken);
 }
 
 public sealed class WorkflowLoadResult

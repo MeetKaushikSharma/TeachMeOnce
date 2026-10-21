@@ -69,6 +69,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Added validated workflow export/import with atomic temporary-file cleanup and
   a fresh library identity on import, plus confirmation-backed deletion in the
   WPF workflow library.
+- Added in-app workflow rename using the existing workflow identity and atomic
+  save path; the library now supports rename, delete, import, and export without
+  exposing recorded input values in its review panel.
 - Strengthened workflow persistence validation for missing process/window/element
   descriptor fields and missing pattern/ancestor metadata; invalid descriptors
   now fail before they can reach UIA replay.

@@ -450,6 +450,16 @@ internal static class Program
             Assert(importedWorkflow.Actions[0].ExpectedValue == "On", "exported workflow action state survives import");
             Assert(!Directory.EnumerateFiles(Path.GetDirectoryName(transferPath)!, "*.tmp").Any(), "workflow export cleans up its temporary file");
 
+            var renamedWorkflow = new WorkflowDocument
+            {
+                Id = toggleWorkflow.Id,
+                Name = "Renamed toggle workflow",
+                Actions = toggleWorkflow.Actions
+            };
+            await store.SaveAsync(renamedWorkflow, CancellationToken.None);
+            var renamedReloaded = await store.LoadAsync(CancellationToken.None);
+            Assert(renamedReloaded.Workflows.Any(item => item.Id == toggleWorkflow.Id && item.Name == "Renamed toggle workflow"), "workflow rename preserves identity and updates metadata");
+
             var unknownActionRejected = false;
             try
             {

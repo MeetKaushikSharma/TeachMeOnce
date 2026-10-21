@@ -288,6 +288,7 @@ public partial class MainWindow : Window
     private void WorkflowList_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         DeleteWorkflowButton.IsEnabled = WorkflowList.SelectedItem is WorkflowDocument;
+        RenameWorkflowButton.IsEnabled = WorkflowList.SelectedItem is WorkflowDocument;
         ExportWorkflowButton.IsEnabled = WorkflowList.SelectedItem is WorkflowDocument;
         if (WorkflowList.SelectedItem is not WorkflowDocument workflow)
         {
@@ -361,6 +362,98 @@ public partial class MainWindow : Window
             SetState("Error: workflow delete failed");
             _diagnostics.Write("Error", "Workflow delete failed.", exception);
         }
+    }
+
+    private async void RenameWorkflowButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (WorkflowList.SelectedItem is not WorkflowDocument workflow)
+        {
+            SetState("Rename unavailable: select a workflow");
+            return;
+        }
+
+        var name = PromptForWorkflowName(workflow.Name);
+        if (name is null || string.Equals(name, workflow.Name, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var renamed = new WorkflowDocument
+        {
+            Id = workflow.Id,
+            SchemaVersion = workflow.SchemaVersion,
+            Name = name,
+            Actions = workflow.Actions
+        };
+
+        try
+        {
+            await _workflowStore.SaveAsync(renamed, CancellationToken.None);
+            var index = _workflows.IndexOf(workflow);
+            if (index >= 0)
+            {
+                _workflows[index] = renamed;
+            }
+
+            WorkflowList.Items.Refresh();
+            WorkflowList.SelectedItem = renamed;
+            SetState("Renamed: workflow name updated");
+            _diagnostics.Write("Info", $"Renamed workflow to '{renamed.Name}'.");
+        }
+        catch (Exception exception)
+        {
+            SetState("Error: workflow rename failed");
+            _diagnostics.Write("Error", "Workflow rename failed.", exception);
+        }
+    }
+
+    private string? PromptForWorkflowName(string currentName)
+    {
+        var textBox = new System.Windows.Controls.TextBox
+        {
+            Text = currentName,
+            MinWidth = 300,
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+        var dialog = new Window
+        {
+            Owner = this,
+            Title = "Rename workflow",
+            Width = 380,
+            Height = 145,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = new System.Windows.Controls.StackPanel
+            {
+                Margin = new Thickness(16),
+                Children =
+                {
+                    new System.Windows.Controls.TextBlock { Text = "Workflow name", Margin = new Thickness(0, 0, 0, 6) },
+                    textBox,
+                    new System.Windows.Controls.StackPanel
+                    {
+                        Orientation = System.Windows.Controls.Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        Children =
+                        {
+                            new System.Windows.Controls.Button { Content = "Cancel", Width = 80, IsCancel = true, Margin = new Thickness(0, 0, 6, 0) },
+                            new System.Windows.Controls.Button { Content = "Rename", Width = 80, IsDefault = true }
+                        }
+                    }
+                }
+            }
+        };
+        var buttonPanel = (System.Windows.Controls.StackPanel)((System.Windows.Controls.StackPanel)dialog.Content).Children[2];
+        var renameButton = (System.Windows.Controls.Button)buttonPanel.Children[1];
+        renameButton.Click += (_, _) =>
+        {
+            if (!string.IsNullOrWhiteSpace(textBox.Text))
+            {
+                dialog.DialogResult = true;
+            }
+        };
+
+        return dialog.ShowDialog() == true ? textBox.Text.Trim() : null;
     }
 
     private async void ExportWorkflowButton_OnClick(object sender, RoutedEventArgs e)

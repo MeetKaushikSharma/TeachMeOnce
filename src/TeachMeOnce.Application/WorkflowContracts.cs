@@ -113,6 +113,7 @@ public sealed class ExecutionResult
     public required string Message { get; init; }
     public int CompletedActionCount { get; init; }
     public TimeSpan Elapsed { get; init; }
+    public bool RetryEligible { get; init; }
 }
 
 public enum VerificationOutcome

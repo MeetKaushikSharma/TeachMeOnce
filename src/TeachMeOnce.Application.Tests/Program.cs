@@ -264,6 +264,7 @@ internal static class Program
             var executor = new UiAutomationWorkflowExecutor(42, "missing window", new DiagnosticLog());
             var cancelled = await executor.ExecuteAsync(workflow, cancellation.Token);
             Assert(cancelled.Status == ExecutionStatus.Cancelled, "pre-cancelled replay is safe");
+            Assert(cancelled.RetryEligible, "cancelled replay reports retry eligibility");
             Assert(UiAutomationWorkflowExecutor.MapResolutionStatus(ResolutionStatus.NotFound) == ExecutionStatus.NotFound, "missing targets remain explicit");
             Assert(UiAutomationWorkflowExecutor.MapResolutionStatus(ResolutionStatus.Ambiguous) == ExecutionStatus.Ambiguous, "ambiguous targets remain explicit");
             Assert(UiAutomationWorkflowExecutor.MapResolutionStatus(ResolutionStatus.ContextMismatch) == ExecutionStatus.ContextMismatch, "context mismatches remain explicit");

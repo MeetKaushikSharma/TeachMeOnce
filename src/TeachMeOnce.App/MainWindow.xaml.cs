@@ -305,7 +305,7 @@ public partial class MainWindow : Window
     private void UpdateWorkflowDetails(WorkflowDocument workflow)
     {
         var lastResultText = _lastResults.TryGetValue(workflow.Id, out var lastResult)
-            ? $"Last result: {lastResult.Status}; completed={lastResult.CompletedActionCount}; {lastResult.Message}"
+            ? $"Last result: {lastResult.Status}; completed={lastResult.CompletedActionCount}; retry={lastResult.RetryEligible}; {lastResult.Message}"
             : "Last result: not run in this session";
 
         var details = new List<string>

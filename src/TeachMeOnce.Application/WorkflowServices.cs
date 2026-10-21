@@ -916,6 +916,11 @@ public sealed class UiAutomationWorkflowExecutor : IWorkflowExecutor
         Status = status,
         Message = message,
         CompletedActionCount = completed,
-        Elapsed = Stopwatch.GetElapsedTime(started)
+        Elapsed = Stopwatch.GetElapsedTime(started),
+        RetryEligible = status is ExecutionStatus.Cancelled
+            or ExecutionStatus.TimedOut
+            or ExecutionStatus.NotFound
+            or ExecutionStatus.ContextMismatch
+            or ExecutionStatus.Failed
     };
 }

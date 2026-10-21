@@ -100,7 +100,7 @@ middle action correctly.
 | P3.2 | Add action list/details editor | The workflow panel exposes action type, target process/control, required patterns, expected state, schema, and sensitive-target warnings without displaying input values; editing remains future work |
 | P3.3 | Add safe rename/delete/export/import | User-scoped rename, confirmation-backed deletion, and validated atomic export/import are implemented and covered by contract tests |
 | P3.4 | Add permissions/settings guidance | Product shell explains UIA-first behavior, interactive desktop/same-integrity limitation, user data path, sensitive-input policy, coordinate fallback, and no-silent-elevation boundary without offering escalation |
-| P3.5 | Add replay progress/recovery UX | Current action and state are visible, visible diagnostics are bounded, cancellation is immediate at a safe boundary; diagnostic IDs and retry eligibility remain future work |
+| P3.5 | Add replay progress/recovery UX | Current action/state are visible, diagnostics are bounded, cancellation is immediate at a safe boundary, and result details expose retry eligibility; diagnostic linkage remains future work |
 
 **P3 completion gate:** A user can review and edit a workflow without opening
 JSON manually, understand why an action is unsafe/unsupported, and recover from

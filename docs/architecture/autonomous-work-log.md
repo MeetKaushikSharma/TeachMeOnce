@@ -118,6 +118,16 @@ reacquisition, duplicate exact-match rejection, deterministic restoration, and
 stale-window handling. Each duplicate case reported two candidates and no
 returned element.
 
+The bounded-wait regression was also run because descriptor waiting changed:
+
+```text
+powershell -ExecutionPolicy Bypass -File .\scripts\Test-Poc04.ps1
+```
+
+Passed for both WPF and WinForms fixtures: five cases each covering delayed
+appearance, condition satisfaction, bounded timeout, prompt cancellation, and
+missing-target handling.
+
 Additional fixture capability inspection confirmed:
 
 - WPF `ToggleCheckBox` exposes `TogglePattern` and starts `Off`.

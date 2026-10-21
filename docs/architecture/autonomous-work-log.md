@@ -106,6 +106,18 @@ POC-02 was not rerun because its previously successful evidence remains valid
 for the unchanged hook/correlation behavior; the current edits affect replay
 and target waiting rather than the capture implementation.
 
+Because target resolution and native-window candidate handling were part of the
+current reliability work, the focused resolver regression was also run:
+
+```text
+powershell -ExecutionPolicy Bypass -File .\scripts\Test-Poc03.ps1
+```
+
+Passed for both WPF and WinForms fixtures: six resolver cases each, including
+reacquisition, duplicate exact-match rejection, deterministic restoration, and
+stale-window handling. Each duplicate case reported two candidates and no
+returned element.
+
 Additional fixture capability inspection confirmed:
 
 - WPF `ToggleCheckBox` exposes `TogglePattern` and starts `Off`.

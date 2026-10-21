@@ -73,12 +73,29 @@ public sealed class UiAutomationWaiter
         var started = Stopwatch.GetTimestamp();
         var deadline = DateTimeOffset.UtcNow + timeout;
         var probes = 0;
+        var uiAutomationErrorCount = 0;
         var lastProbeSummary = "no top-level candidates were inspected";
         while (DateTimeOffset.UtcNow < deadline)
         {
             cancellationToken.ThrowIfCancellationRequested();
             probes++;
-            var matches = FindWindows(descriptor, out lastProbeSummary);
+            IReadOnlyList<AutomationElement> matches;
+            try
+            {
+                matches = FindWindows(descriptor, out lastProbeSummary);
+            }
+            catch (Exception exception) when (IsRecoverableUiAutomationError(exception))
+            {
+                uiAutomationErrorCount++;
+                lastProbeSummary = $"UI Automation enumeration failed with {exception.GetType().Name}";
+                var failedProbeRemaining = deadline - DateTimeOffset.UtcNow;
+                if (failedProbeRemaining > TimeSpan.Zero)
+                {
+                    await Task.Delay(failedProbeRemaining < _pollInterval ? failedProbeRemaining : _pollInterval, cancellationToken).ConfigureAwait(false);
+                }
+
+                continue;
+            }
             if (matches.Count > 1)
             {
                 return new WaitResult<AutomationElement>
@@ -86,7 +103,8 @@ public sealed class UiAutomationWaiter
                     Status = WaitStatus.Ambiguous,
                     Reason = $"Multiple top-level windows matched process '{descriptor.Process.ProcessName}' and its window context.",
                     Elapsed = Stopwatch.GetElapsedTime(started),
-                    ProbeCount = probes
+                    ProbeCount = probes,
+                    UiAutomationErrorCount = uiAutomationErrorCount
                 };
             }
 
@@ -98,7 +116,8 @@ public sealed class UiAutomationWaiter
                     Value = matches[0],
                     Reason = "Exactly one top-level window matched the selected target context.",
                     Elapsed = Stopwatch.GetElapsedTime(started),
-                    ProbeCount = probes
+                    ProbeCount = probes,
+                    UiAutomationErrorCount = uiAutomationErrorCount
                 };
             }
 
@@ -116,7 +135,8 @@ public sealed class UiAutomationWaiter
             Status = WaitStatus.TimedOut,
             Reason = $"Timed out waiting for exactly one top-level window for process '{descriptor.Process.ProcessName}'; {lastProbeSummary}.",
             Elapsed = Stopwatch.GetElapsedTime(started),
-            ProbeCount = probes
+            ProbeCount = probes,
+            UiAutomationErrorCount = uiAutomationErrorCount
         };
     }
 
@@ -348,7 +368,7 @@ public sealed class UiAutomationWaiter
 
                 matches.Add(candidate);
             }
-            catch (Exception exception) when (exception is ElementNotAvailableException or ArgumentException or InvalidOperationException)
+            catch (Exception exception) when (exception is ElementNotAvailableException or ArgumentException or InvalidOperationException or COMException)
             {
                 // The window disappeared while polling; the next poll may find its replacement.
             }

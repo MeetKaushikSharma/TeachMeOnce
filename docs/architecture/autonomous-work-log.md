@@ -69,6 +69,10 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Strengthened workflow persistence validation for missing process/window/element
   descriptor fields and missing pattern/ancestor metadata; invalid descriptors
   now fail before they can reach UIA replay.
+- Hardened descriptor-window waits against recoverable COM/UIA enumeration
+  failures and now retain an error count in the bounded wait result instead of
+  allowing a transient provider exception to escape as an unclassified replay
+  failure.
 - Updated the Notepad runbook to accept either `SetValue` or `TextInput`.
 
 ## Verification actually run

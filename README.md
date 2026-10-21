@@ -227,6 +227,16 @@ Run the product from an interactive Windows desktop with:
 dotnet run --project .\src\TeachMeOnce.App\TeachMeOnce.App.csproj --configuration Release
 ```
 
+Create the recommended self-contained `win-x64` folder release with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Publish-App.ps1
+```
+
+The script writes to `artifacts/publish/TeachMeOnce.App` and validates that the
+published executable exists. A development-workstation launch is not a clean-
+machine compatibility claim.
+
 Run the dependency-free application contract checks with:
 
 ```powershell

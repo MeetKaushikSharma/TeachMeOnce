@@ -94,6 +94,10 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Added startup cleanup for orphaned `*.json.tmp` workflow files left by a
   terminated or cancelled save; valid workflows continue loading and the
   orphan-cleanup path is covered by the contract test.
+- Added `scripts/Publish-App.ps1` for the recommended self-contained `win-x64`
+  folder release. The published executable was launched locally, reached the
+  TeachMeOnce window, and exited with code `0`; this is not clean-machine
+  evidence.
 - Strengthened workflow persistence validation for missing process/window/element
   descriptor fields and missing pattern/ancestor metadata; invalid descriptors
   now fail before they can reach UIA replay.

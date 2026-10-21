@@ -12,6 +12,7 @@ internal static class Program
     private static async Task<int> Main(string[] args)
     {
         var fixturePath = ParseFixturePath(args);
+        var winForms = args.Contains("--winforms", StringComparer.OrdinalIgnoreCase);
         if (fixturePath is null)
         {
             Console.Error.WriteLine("Usage: application-integration-tests --fixture path-to-WpfFixture.exe");
@@ -46,13 +47,18 @@ internal static class Program
                 diagnostics,
                 progress: message => Console.WriteLine(message));
 
-            await ExecuteInvokeAsync(executor, window, "InvokeButton", "StatusText", "Status: invoked");
+            await ExecuteInvokeAsync(executor, window, "InvokeButton", winForms ? "StatusLabel" : "StatusText", "Status: invoked");
             await ExecuteSetValueAsync(executor, window, "ValueTextBox", "integration value");
             await ExecuteToggleAsync(executor, window, "ToggleCheckBox", "On");
-            await ExecuteSelectAsync(executor, window, "ListItemTwo");
-            await ExecuteExpandCollapseAsync(executor, window, "ExpandableSection", "Expanded");
+            await ExecuteSelectAsync(executor, window, winForms);
+            if (!winForms)
+            {
+                await ExecuteExpandCollapseAsync(executor, window, "ExpandableSection", "Expanded");
+            }
 
-            Console.WriteLine("Application adapter integration checks passed: Invoke, SetValue, Toggle, Select, ExpandCollapse.");
+            Console.WriteLine(winForms
+                ? "Application adapter integration checks passed: Invoke, SetValue, Toggle, Select."
+                : "Application adapter integration checks passed: Invoke, SetValue, Toggle, Select, ExpandCollapse.");
             return 0;
         }
         catch (Exception exception) when (exception is InvalidOperationException or ElementNotAvailableException or COMException)
@@ -127,9 +133,11 @@ internal static class Program
     private static async Task ExecuteSelectAsync(
         UiAutomationWorkflowExecutor executor,
         AutomationElement window,
-        string automationId)
+        bool winForms)
     {
-        var target = Find(window, automationId);
+        var target = winForms
+            ? FindByName(window, "List item two")
+            : Find(window, "ListItemTwo");
         var action = new WorkflowAction
         {
             ActionType = "Select",
@@ -178,6 +186,14 @@ internal static class Program
                    TreeScope.Descendants,
                    new PropertyCondition(AutomationElement.AutomationIdProperty, automationId))
                ?? throw new InvalidOperationException($"Fixture element '{automationId}' was not found.");
+    }
+
+    private static AutomationElement FindByName(AutomationElement window, string name)
+    {
+        return window.FindFirst(
+                   TreeScope.Descendants,
+                   new PropertyCondition(AutomationElement.NameProperty, name))
+               ?? throw new InvalidOperationException($"Fixture element named '{name}' was not found.");
     }
 
     private static TargetDescriptor BuildDescriptor(AutomationElement window, AutomationElement target)

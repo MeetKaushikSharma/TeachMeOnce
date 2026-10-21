@@ -77,8 +77,11 @@ one visible Notepad window; physical-input recording remains manual evidence.
   a workflow clears its session result state.
 - Added `TeachMeOnce.Application.IntegrationTests` and
   `scripts/Test-ApplicationAdapters.ps1`. The interactive integration test
-  launches the real WPF fixture and verified the product executor end to end
-  for Invoke, SetValue, Toggle, Select, and ExpandCollapse.
+  launches the real WPF and WinForms fixtures and verified the product executor
+  end to end for Invoke, SetValue, Toggle, and Select across both frameworks,
+  plus ExpandCollapse on WPF. The first WinForms attempt exposed a fixture
+  naming difference (`List item two` versus the WPF AutomationId); the test was
+  corrected to use the observed stable WinForms name.
 - Strengthened workflow persistence validation for missing process/window/element
   descriptor fields and missing pattern/ancestor metadata; invalid descriptors
   now fail before they can reach UIA replay.

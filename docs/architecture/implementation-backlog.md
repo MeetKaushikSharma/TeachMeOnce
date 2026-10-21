@@ -77,7 +77,7 @@ observable replay.
 | ID | Work item | Acceptance criteria |
 | --- | --- | --- |
 | P2.1 | Define action adapter interface and action registry | Each action declares required UIA patterns, preconditions, execution, verification, and failure mapping; unknown action types and descriptors missing declared capabilities are rejected |
-| P2.2 | Add `SetValue`, `Toggle`, `Select`, and `ExpandCollapse` adapters | `SetValue`, `Toggle`, `Select`, and `ExpandCollapse` are implemented with enabled/pattern checks, explicit expected state, cancellation, bounded postcondition verification, and a real WPF fixture integration check |
+| P2.2 | Add `SetValue`, `Toggle`, `Select`, and `ExpandCollapse` adapters | `SetValue`, `Toggle`, `Select`, and `ExpandCollapse` are implemented with enabled/pattern checks, explicit expected state, cancellation, bounded postcondition verification, and WPF/WinForms fixture integration checks where each framework exposes the capability |
 | P2.3 | Separate target context from action payload | Descriptors have validated process/window/ancestor context; action payload contains only type-specific data; no COM/UIA objects serialize |
 | P2.4 | Add schema migration registry | Version 1 remains readable and its action vocabulary is validated; future changes use pure versioned migrations with fixture files; unknown future versions are rejected |
 | P2.5 | Improve stale-provider and retry policy | Only known stale-provider failures may reacquire the same descriptor within a bounded count; ambiguity and unsafe context never retry elsewhere |

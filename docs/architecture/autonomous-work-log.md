@@ -88,6 +88,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Added stable diagnostic entry identifiers to in-memory entries, persisted
   logs, and the visible WPF diagnostic list; the contract test verifies IDs are
   present while redaction behavior remains unchanged.
+- Added best-effort diagnostic file retention: logs trim to the newest roughly
+  2 MB after crossing a 4 MB limit, while retention failures do not break the
+  application diagnostic path and temporary trim files are cleaned up.
 - Strengthened workflow persistence validation for missing process/window/element
   descriptor fields and missing pattern/ancestor metadata; invalid descriptors
   now fail before they can reach UIA replay.

@@ -214,6 +214,8 @@ public sealed class JsonWorkflowStore : IWorkflowStore
 
 public sealed class DiagnosticLog : IDiagnosticSink
 {
+    private const long MaximumDiagnosticFileBytes = 4 * 1024 * 1024;
+    private const long RetainedDiagnosticFileBytes = 2 * 1024 * 1024;
     private static readonly Regex SensitiveAssignment = new(
         @"(?<prefix>\b(?:password|passwd|pwd|secret|token|api[-_]?key|authorization)\b\s*[:=]\s*)(?<value>[^\s,;]+)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
@@ -289,10 +291,59 @@ public sealed class DiagnosticLog : IDiagnosticSink
                 _filePath!,
                 $"{entry.TimestampUtc:O} [{entry.Level}] [{entry.Id:N}] {entry.Message}{Environment.NewLine}")
                 .ConfigureAwait(false);
+
+            await TrimFileIfNeededAsync().ConfigureAwait(false);
         }
         finally
         {
             _fileWriteGate.Release();
+        }
+    }
+
+    private async Task TrimFileIfNeededAsync()
+    {
+        try
+        {
+            var length = new FileInfo(_filePath!).Length;
+            if (length <= MaximumDiagnosticFileBytes)
+            {
+                return;
+            }
+
+            var bytes = await File.ReadAllBytesAsync(_filePath!).ConfigureAwait(false);
+            var start = Math.Max(0, bytes.Length - (int)RetainedDiagnosticFileBytes);
+            while (start < bytes.Length && bytes[start] != (byte)'\n')
+            {
+                start++;
+            }
+
+            if (start < bytes.Length)
+            {
+                start++;
+            }
+
+            var temporaryPath = _filePath! + ".trim";
+            try
+            {
+                await File.WriteAllBytesAsync(temporaryPath, bytes[start..]).ConfigureAwait(false);
+                File.Move(temporaryPath, _filePath!, true);
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath))
+                {
+                    File.Delete(temporaryPath);
+                }
+            }
+        }
+        catch (IOException)
+        {
+            // Retention is best effort; a diagnostic write must not fail because
+            // an antivirus or another reader temporarily holds the log file.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // The next write will retry retention once access is restored.
         }
     }
 

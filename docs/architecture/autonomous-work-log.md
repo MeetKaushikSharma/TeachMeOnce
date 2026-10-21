@@ -87,6 +87,12 @@ dotnet run --project .\src\TeachMeOnce.Application.Tests\TeachMeOnce.Application
 
 Passed: `TeachMeOnce.Application.Tests passed.`
 
+The Release product executable was also launched from
+`src/TeachMeOnce.App/bin/Release/net10.0-windows/win-x64/TeachMeOnce.App.exe`,
+reached the `TeachMeOnce` main window, and closed with exit code `0`. This
+verified the updated workflow-library XAML and startup/load path, but not a new
+physical-input acceptance run.
+
 An automated UIA replay probe was first refused as
 `Ambiguous: Multiple top-level windows matched process 'Notepad' and its window
 context`; this was a correct safety refusal. After closing the extra visible

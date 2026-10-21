@@ -72,6 +72,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Added in-app workflow rename using the existing workflow identity and atomic
   save path; the library now supports rename, delete, import, and export without
   exposing recorded input values in its review panel.
+- Added session-visible last-result metadata to workflow details, including
+  status, completed action count, and the redacted execution message. Deleting
+  a workflow clears its session result state.
 - Strengthened workflow persistence validation for missing process/window/element
   descriptor fields and missing pattern/ancestor metadata; invalid descriptors
   now fail before they can reach UIA replay.

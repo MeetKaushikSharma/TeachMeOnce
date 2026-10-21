@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     private ExternalRecordingSession? _externalRecording;
     private IReadOnlyList<ExternalWindowCandidate> _targetCandidates = Array.Empty<ExternalWindowCandidate>();
     private readonly List<WorkflowDocument> _workflows = new();
+    private readonly Dictionary<Guid, ExecutionResult> _lastResults = new();
     private WorkflowAction? _recordedAction;
     private CancellationTokenSource? _replayCancellation;
     private bool _recording;
@@ -220,7 +221,9 @@ public partial class MainWindow : Window
         try
         {
             var result = await _executor.ExecuteAsync(workflow, _replayCancellation.Token);
+            _lastResults[workflow.Id] = result;
             SetState($"{result.Status}: {result.Message}");
+            UpdateWorkflowDetails(workflow);
         }
         finally
         {
@@ -296,9 +299,19 @@ public partial class MainWindow : Window
             return;
         }
 
+        UpdateWorkflowDetails(workflow);
+    }
+
+    private void UpdateWorkflowDetails(WorkflowDocument workflow)
+    {
+        var lastResultText = _lastResults.TryGetValue(workflow.Id, out var lastResult)
+            ? $"Last result: {lastResult.Status}; completed={lastResult.CompletedActionCount}; {lastResult.Message}"
+            : "Last result: not run in this session";
+
         var details = new List<string>
         {
-            $"{workflow.Actions.Count} action(s) · schema {workflow.SchemaVersion}"
+            $"{workflow.Actions.Count} action(s) · schema {workflow.SchemaVersion}",
+            lastResultText
         };
 
         for (var index = 0; index < workflow.Actions.Count; index++)
@@ -351,6 +364,7 @@ public partial class MainWindow : Window
             }
 
             _workflows.Remove(workflow);
+            _lastResults.Remove(workflow.Id);
             WorkflowList.Items.Refresh();
             WorkflowList.SelectedItem = null;
             DeleteWorkflowButton.IsEnabled = false;

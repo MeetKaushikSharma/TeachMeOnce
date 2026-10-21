@@ -96,7 +96,7 @@ middle action correctly.
 
 | ID | Work item | Acceptance criteria |
 | --- | --- | --- |
-| P3.1 | Add workflow metadata and status views | Library shows name, action count, schema status, modified time, and last result |
+| P3.1 | Add workflow metadata and status views | Library shows name, action count, schema status, and session-visible last result with completed count; modified time remains future metadata |
 | P3.2 | Add action list/details editor | The workflow panel exposes action type, target process/control, required patterns, expected state, schema, and sensitive-target warnings without displaying input values; editing remains future work |
 | P3.3 | Add safe rename/delete/export/import | User-scoped rename, confirmation-backed deletion, and validated atomic export/import are implemented and covered by contract tests |
 | P3.4 | Add permissions/settings guidance | UI explains UIA/interactive desktop requirements, same-integrity limitation, data path, and sensitive-input policy without offering silent elevation |

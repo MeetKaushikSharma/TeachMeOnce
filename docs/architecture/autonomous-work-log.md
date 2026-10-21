@@ -81,6 +81,11 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Added `scripts/Test-Product.ps1` as a repeatable product verification entry
   point for the Release build, dependency-free contract checks, and WPF/WinForms
   adapter integration checks.
+- Re-ran the published-output deployment regression:
+  `powershell -ExecutionPolicy Bypass -File .\scripts\Test-Poc08.ps1`. All four
+  FDD/SCD folder/single-file published smoke modes passed UIA, configuration,
+  writable-data, logging, and error-reporting checks. This remains development
+  workstation evidence; `cleanMachineTested=false` is preserved.
 - Added `TeachMeOnce.Application.IntegrationTests` and
   `scripts/Test-ApplicationAdapters.ps1`. The interactive integration test
   launches the real WPF and WinForms fixtures and verified the product executor

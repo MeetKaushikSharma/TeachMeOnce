@@ -29,6 +29,7 @@ public sealed class JsonWorkflowStore : IWorkflowStore
     public async Task<WorkflowLoadResult> LoadAsync(CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(_directory);
+        CleanupOrphanedTemporaryFiles();
         var workflows = new List<WorkflowDocument>();
         var issues = new List<WorkflowLoadIssue>();
         foreach (var path in Directory.EnumerateFiles(_directory, "*.json"))
@@ -60,6 +61,25 @@ public sealed class JsonWorkflowStore : IWorkflowStore
             Workflows = workflows.OrderBy(workflow => workflow.Name, StringComparer.OrdinalIgnoreCase).ToArray(),
             Issues = issues
         };
+    }
+
+    private void CleanupOrphanedTemporaryFiles()
+    {
+        foreach (var path in Directory.EnumerateFiles(_directory, "*.json.tmp"))
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (IOException)
+            {
+                // A locked orphan is ignored; it cannot be loaded as a workflow.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // A permission boundary should not prevent valid workflows from loading.
+            }
+        }
     }
 
     public async Task SaveAsync(WorkflowDocument workflow, CancellationToken cancellationToken)

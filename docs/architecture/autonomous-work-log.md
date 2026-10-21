@@ -91,6 +91,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Added best-effort diagnostic file retention: logs trim to the newest roughly
   2 MB after crossing a 4 MB limit, while retention failures do not break the
   application diagnostic path and temporary trim files are cleaned up.
+- Added startup cleanup for orphaned `*.json.tmp` workflow files left by a
+  terminated or cancelled save; valid workflows continue loading and the
+  orphan-cleanup path is covered by the contract test.
 - Strengthened workflow persistence validation for missing process/window/element
   descriptor fields and missing pattern/ancestor metadata; invalid descriptors
   now fail before they can reach UIA replay.

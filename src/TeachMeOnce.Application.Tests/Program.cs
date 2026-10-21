@@ -539,6 +539,12 @@ internal static class Program
             Assert(cancelledSaveObserved, "cancelled workflow saves report cancellation");
             Assert(!Directory.EnumerateFiles(root, "*.tmp").Any(), "cancelled workflow saves clean up their temporary file");
 
+            var orphanPath = Path.Combine(root, "orphan.json.tmp");
+            await File.WriteAllTextAsync(orphanPath, "temporary workflow data");
+            var afterOrphanCleanup = await store.LoadAsync(CancellationToken.None);
+            Assert(afterOrphanCleanup.Workflows.Count > 0, "workflow loading continues after orphan cleanup");
+            Assert(!File.Exists(orphanPath), "workflow loading removes orphaned temporary files");
+
             using var hookSession = new InputHookSession(1);
             Assert(!hookSession.IsRunning, "a recording hook session is idle before start");
 

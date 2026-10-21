@@ -60,10 +60,14 @@ internal static class Program
             Assert(actionRegistry.TryGet("SetValue", out var setValueAdapter) && setValueAdapter is not null, "the action registry exposes SetValue");
             Assert(actionRegistry.TryGet("TextInput", out var textInputAdapter) && textInputAdapter is not null, "the action registry exposes TextInput");
             Assert(actionRegistry.TryGet("Toggle", out var toggleAdapter) && toggleAdapter is not null, "the action registry exposes Toggle");
+            Assert(actionRegistry.TryGet("Select", out var selectAdapter) && selectAdapter is not null, "the action registry exposes Select");
+            Assert(actionRegistry.TryGet("ExpandCollapse", out var expandCollapseAdapter) && expandCollapseAdapter is not null, "the action registry exposes ExpandCollapse");
             Assert(!actionRegistry.TryGet("UnknownAction", out _), "unknown action types are rejected by the registry");
             Assert(invokeAdapter!.RequiredPatterns.Contains("Invoke"), "Invoke declares its required UIA pattern");
             Assert(setValueAdapter!.RequiredPatterns.Contains("Value"), "SetValue declares its required UIA pattern");
             Assert(toggleAdapter!.RequiredPatterns.Contains("Toggle"), "Toggle declares its required UIA pattern");
+            Assert(selectAdapter!.RequiredPatterns.Contains("SelectionItem"), "Select declares its required UIA pattern");
+            Assert(expandCollapseAdapter!.RequiredPatterns.Contains("ExpandCollapse"), "ExpandCollapse declares its required UIA pattern");
 
             var secondWorkflow = new WorkflowDocument
             {
@@ -154,6 +158,66 @@ internal static class Program
             Assert(toggleReloaded.Workflows.Single(item => item.Name == "Toggle workflow").Actions[0].ExpectedValue == "On", "Toggle expected state survives persistence");
             Assert(toggleReloaded.Workflows.Single(item => item.Name == "Toggle workflow").Actions[0].Target.Element.RequiredPatterns.Contains("Toggle"), "Toggle target capability survives persistence");
 
+            var selectWorkflow = new WorkflowDocument
+            {
+                Name = "Select workflow",
+                Actions = new[]
+                {
+                    new WorkflowAction
+                    {
+                        ActionType = "Select",
+                        Description = "Select second option",
+                        Target = new TargetDescriptor
+                        {
+                            Process = descriptor.Process,
+                            Window = descriptor.Window,
+                            Element = new ElementDescriptor
+                            {
+                                AutomationId = "SecondOption",
+                                Name = "Second option",
+                                ControlType = "ControlType.ListItem",
+                                RequiredPatterns = new[] { "SelectionItem" }
+                            },
+                            Ancestors = Array.Empty<ElementDescriptor>()
+                        },
+                        ExpectedValue = WorkflowSchema.SelectedState
+                    }
+                }
+            };
+            await store.SaveAsync(selectWorkflow, CancellationToken.None);
+            var selectReloaded = await store.LoadAsync(CancellationToken.None);
+            Assert(selectReloaded.Workflows.Single(item => item.Name == "Select workflow").Actions[0].ExpectedValue == WorkflowSchema.SelectedState, "Select expected state survives persistence");
+
+            var expandCollapseWorkflow = new WorkflowDocument
+            {
+                Name = "Expand/collapse workflow",
+                Actions = new[]
+                {
+                    new WorkflowAction
+                    {
+                        ActionType = "ExpandCollapse",
+                        Description = "Expand section",
+                        Target = new TargetDescriptor
+                        {
+                            Process = descriptor.Process,
+                            Window = descriptor.Window,
+                            Element = new ElementDescriptor
+                            {
+                                AutomationId = "ExpandableSection",
+                                Name = "Expandable section",
+                                ControlType = "ControlType.Group",
+                                RequiredPatterns = new[] { "ExpandCollapse" }
+                            },
+                            Ancestors = Array.Empty<ElementDescriptor>()
+                        },
+                        ExpectedValue = "Expanded"
+                    }
+                }
+            };
+            await store.SaveAsync(expandCollapseWorkflow, CancellationToken.None);
+            var expandCollapseReloaded = await store.LoadAsync(CancellationToken.None);
+            Assert(expandCollapseReloaded.Workflows.Single(item => item.Name == "Expand/collapse workflow").Actions[0].ExpectedValue == "Expanded", "ExpandCollapse expected state survives persistence");
+
             var invalidToggleRejected = false;
             try
             {
@@ -184,13 +248,13 @@ internal static class Program
             var invalidJson = json.Replace("\"schemaVersion\": 1", "\"schemaVersion\": 99", StringComparison.Ordinal);
             await File.WriteAllTextAsync(path, invalidJson);
             var invalidResult = await store.LoadAsync(CancellationToken.None);
-            Assert(invalidResult.Workflows.Count == 4, "valid workflows survive an invalid file");
+            Assert(invalidResult.Workflows.Count == 6, "valid workflows survive an invalid file");
             Assert(invalidResult.Issues.Count == 1, "unsupported schema versions are reported");
 
             var malformedPath = Path.Combine(root, "malformed.json");
             await File.WriteAllTextAsync(malformedPath, "{ not valid json");
             var malformedResult = await store.LoadAsync(CancellationToken.None);
-            Assert(malformedResult.Workflows.Count == 4, "valid workflows survive malformed JSON");
+            Assert(malformedResult.Workflows.Count == 6, "valid workflows survive malformed JSON");
             Assert(malformedResult.Issues.Count == 2, "malformed and unsupported files are both reported");
 
             using var cancellation = new CancellationTokenSource();

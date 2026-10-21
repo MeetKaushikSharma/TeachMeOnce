@@ -77,7 +77,7 @@ observable replay.
 | ID | Work item | Acceptance criteria |
 | --- | --- | --- |
 | P2.1 | Define action adapter interface and action registry | Each action declares required UIA patterns, preconditions, execution, verification, and failure mapping; unknown action types are rejected |
-| P2.2 | Add `SetValue`, `Toggle`, `Select`, and `ExpandCollapse` adapters | `SetValue` and `Toggle` are implemented with enabled/pattern checks, explicit expected state, cancellation, and bounded postcondition verification; Select and ExpandCollapse remain next |
+| P2.2 | Add `SetValue`, `Toggle`, `Select`, and `ExpandCollapse` adapters | `SetValue`, `Toggle`, `Select`, and `ExpandCollapse` are implemented with enabled/pattern checks, explicit expected state, cancellation, and bounded postcondition verification |
 | P2.3 | Separate target context from action payload | Descriptors have process/window/ancestor context; action payload contains only type-specific data; no COM/UIA objects serialize |
 | P2.4 | Add schema migration registry | Version 1 remains readable; future changes use pure versioned migrations with fixture files; unknown future versions are rejected |
 | P2.5 | Improve stale-provider and retry policy | Only known stale-provider failures may reacquire the same descriptor within a bounded count; ambiguity and unsafe context never retry elsewhere |

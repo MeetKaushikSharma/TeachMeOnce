@@ -214,7 +214,7 @@ The product now begins at `src/TeachMeOnce.App`, with reusable application
 services in `src/TeachMeOnce.Application` and UI Automation boundaries in
 `src/TeachMeOnce.Automation`. The product slice also supports explicitly
 selecting and attaching to a running same-integrity external window, recording
-semantic Invoke, Toggle, and non-sensitive SetValue actions through a bounded global
+semantic Invoke, Toggle, Select, ExpandCollapse, and non-sensitive SetValue actions through a bounded global
 input session, saving a versioned workflow, and replaying it through
 deterministic UI Automation resolution. The built-in demo remains available as
 a regression surface.

@@ -178,6 +178,8 @@ public static class RecordingActionBuilder
         var actions = new List<(long Sequence, WorkflowAction Action)>();
         var textCandidates = new Dictionary<string, TextCandidate>(StringComparer.Ordinal);
         var toggleCandidates = new List<(long Sequence, TargetDescriptor Descriptor, ElementDescriptor Element)>();
+        var selectCandidates = new List<(long Sequence, TargetDescriptor Descriptor, ElementDescriptor Element)>();
+        var expandCollapseCandidates = new List<(long Sequence, TargetDescriptor Descriptor, ElementDescriptor Element)>();
         var rejections = new Dictionary<string, int>(StringComparer.Ordinal);
         var retainedCount = 0;
         var focusedCount = 0;
@@ -239,6 +241,20 @@ public static class RecordingActionBuilder
                 && HasPattern(eventData.TargetElement, "Toggle"))
             {
                 toggleCandidates.Add((eventData.Input.Sequence, eventData.TargetDescriptor, eventData.TargetElement));
+            }
+            else if (eventData.Input.Kind == RawInputKind.Mouse
+                && IsLeftButtonDown(eventData.Input.Message)
+                && eventData.TargetElement is not null
+                && HasPattern(eventData.TargetElement, "SelectionItem"))
+            {
+                selectCandidates.Add((eventData.Input.Sequence, eventData.TargetDescriptor, eventData.TargetElement));
+            }
+            else if (eventData.Input.Kind == RawInputKind.Mouse
+                && IsLeftButtonDown(eventData.Input.Message)
+                && eventData.TargetElement is not null
+                && HasPattern(eventData.TargetElement, "ExpandCollapse"))
+            {
+                expandCollapseCandidates.Add((eventData.Input.Sequence, eventData.TargetDescriptor, eventData.TargetElement));
             }
             else if (eventData.Input.Kind == RawInputKind.Mouse
                 && IsLeftButtonDown(eventData.Input.Message)
@@ -317,6 +333,93 @@ public static class RecordingActionBuilder
                         ExpectedValue = expectedState
                     }));
                     diagnostics.Write("Info", $"Recorded Toggle target metadata: {DescribeMetadata(candidate.Element)}, expectedState={expectedState}.");
+                }
+            }
+        }
+
+        if (selectCandidates.Count > 1)
+        {
+            Reject("multiple select candidates cannot be safely attributed in one recording");
+            diagnostics.Write("Warning", "Select recording was refused because more than one selection candidate was captured; the final selection cannot be attributed safely.");
+        }
+        else if (selectCandidates.Count == 1)
+        {
+            var candidate = selectCandidates[0];
+            if (root is null)
+            {
+                Reject("selection target window unavailable during action conversion");
+            }
+            else
+            {
+                var resolution = new TargetResolver().Resolve(root, candidate.Descriptor);
+                if (resolution.Status != ResolutionStatus.Resolved || resolution.Element is null)
+                {
+                    Reject($"selection target resolution {resolution.Status}");
+                    diagnostics.Write("Warning", $"Select was not recorded because the target metadata was {DescribeMetadata(candidate.Element)} and resolution was {resolution.Status}.");
+                }
+                else if (!resolution.Element.TryGetCurrentPattern(SelectionItemPattern.Pattern, out var selectionObject)
+                    || selectionObject is not SelectionItemPattern selectionPattern
+                    || !selectionPattern.Current.IsSelected)
+                {
+                    Reject("selection target was not selected after recording");
+                }
+                else
+                {
+                    actions.Add((candidate.Sequence, new WorkflowAction
+                    {
+                        ActionType = "Select",
+                        Description = $"Select {DescribeMetadata(candidate.Element)}",
+                        Target = candidate.Descriptor,
+                        ExpectedValue = WorkflowSchema.SelectedState
+                    }));
+                    diagnostics.Write("Info", $"Recorded Select target metadata: {DescribeMetadata(candidate.Element)}.");
+                }
+            }
+        }
+
+        if (expandCollapseCandidates.Count > 1)
+        {
+            Reject("multiple expand/collapse candidates cannot be safely attributed in one recording");
+            diagnostics.Write("Warning", "Expand/collapse recording was refused because more than one candidate was captured; the final state cannot be attributed safely.");
+        }
+        else if (expandCollapseCandidates.Count == 1)
+        {
+            var candidate = expandCollapseCandidates[0];
+            if (root is null)
+            {
+                Reject("expand/collapse target window unavailable during action conversion");
+            }
+            else
+            {
+                var resolution = new TargetResolver().Resolve(root, candidate.Descriptor);
+                if (resolution.Status != ResolutionStatus.Resolved || resolution.Element is null)
+                {
+                    Reject($"expand/collapse target resolution {resolution.Status}");
+                    diagnostics.Write("Warning", $"Expand/collapse was not recorded because the target metadata was {DescribeMetadata(candidate.Element)} and resolution was {resolution.Status}.");
+                }
+                else if (!resolution.Element.TryGetCurrentPattern(ExpandCollapsePattern.Pattern, out var expandObject)
+                    || expandObject is not ExpandCollapsePattern expandPattern)
+                {
+                    Reject("expand/collapse target no longer exposed ExpandCollapsePattern");
+                }
+                else
+                {
+                    var state = expandPattern.Current.ExpandCollapseState.ToString();
+                    if (!WorkflowSchema.SupportedExpandCollapseStates.Contains(state))
+                    {
+                        Reject($"unsupported expand/collapse state {state}");
+                    }
+                    else
+                    {
+                        actions.Add((candidate.Sequence, new WorkflowAction
+                        {
+                            ActionType = "ExpandCollapse",
+                            Description = $"Set {DescribeMetadata(candidate.Element)} to {state}",
+                            Target = candidate.Descriptor,
+                            ExpectedValue = state
+                        }));
+                        diagnostics.Write("Info", $"Recorded ExpandCollapse target metadata: {DescribeMetadata(candidate.Element)}, expectedState={state}.");
+                    }
                 }
             }
         }

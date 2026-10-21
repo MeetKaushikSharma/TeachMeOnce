@@ -58,6 +58,8 @@ public sealed class WorkflowActionAdapterRegistry
         yield return new SetValueActionAdapter();
         yield return new TextInputActionAdapter();
         yield return new ToggleActionAdapter();
+        yield return new SelectActionAdapter();
+        yield return new ExpandCollapseActionAdapter();
     }
 }
 
@@ -105,6 +107,115 @@ internal sealed class ToggleActionAdapter : IWorkflowActionAdapter
         catch (InvalidOperationException)
         {
             return ActionAdapterResult.Failed("TogglePattern execution failed because the provider rejected the operation.");
+        }
+    }
+}
+
+internal sealed class SelectActionAdapter : IWorkflowActionAdapter
+{
+    public string ActionType => "Select";
+
+    public IReadOnlyList<string> RequiredPatterns { get; } = new[] { "SelectionItem" };
+
+    public ActionAdapterResult Execute(
+        WorkflowAction action,
+        AutomationElement target,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!string.Equals(action.ExpectedValue, WorkflowSchema.SelectedState, StringComparison.Ordinal))
+        {
+            return ActionAdapterResult.Unsupported("Select action has no canonical expected state.");
+        }
+
+        try
+        {
+            if (!(bool)target.GetCurrentPropertyValue(AutomationElement.IsEnabledProperty))
+            {
+                return ActionAdapterResult.Unsupported("Resolved selection target is disabled.");
+            }
+
+            if (!target.TryGetCurrentPattern(SelectionItemPattern.Pattern, out var patternObject)
+                || patternObject is not SelectionItemPattern pattern)
+            {
+                return ActionAdapterResult.Unsupported("Resolved target does not expose SelectionItemPattern.");
+            }
+
+            pattern.Select();
+            return ActionAdapterResult.Success("SelectionItemPattern execution completed.");
+        }
+        catch (ElementNotEnabledException)
+        {
+            return ActionAdapterResult.Unsupported("Resolved selection target became disabled before execution.");
+        }
+        catch (ElementNotAvailableException)
+        {
+            return ActionAdapterResult.Failed("Resolved selection target became unavailable during execution.");
+        }
+        catch (InvalidOperationException)
+        {
+            return ActionAdapterResult.Failed("SelectionItemPattern execution failed because the provider rejected the operation.");
+        }
+    }
+}
+
+internal sealed class ExpandCollapseActionAdapter : IWorkflowActionAdapter
+{
+    public string ActionType => "ExpandCollapse";
+
+    public IReadOnlyList<string> RequiredPatterns { get; } = new[] { "ExpandCollapse" };
+
+    public ActionAdapterResult Execute(
+        WorkflowAction action,
+        AutomationElement target,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (action.ExpectedValue is null
+            || !WorkflowSchema.SupportedExpandCollapseStates.Contains(action.ExpectedValue))
+        {
+            return ActionAdapterResult.Unsupported("ExpandCollapse action has no supported expected state.");
+        }
+
+        try
+        {
+            if (!(bool)target.GetCurrentPropertyValue(AutomationElement.IsEnabledProperty))
+            {
+                return ActionAdapterResult.Unsupported("Resolved expand/collapse target is disabled.");
+            }
+
+            if (!target.TryGetCurrentPattern(ExpandCollapsePattern.Pattern, out var patternObject)
+                || patternObject is not ExpandCollapsePattern pattern)
+            {
+                return ActionAdapterResult.Unsupported("Resolved target does not expose ExpandCollapsePattern.");
+            }
+
+            var currentState = pattern.Current.ExpandCollapseState.ToString();
+            if (!string.Equals(currentState, action.ExpectedValue, StringComparison.Ordinal))
+            {
+                if (string.Equals(action.ExpectedValue, "Expanded", StringComparison.Ordinal))
+                {
+                    pattern.Expand();
+                }
+                else
+                {
+                    pattern.Collapse();
+                }
+            }
+
+            return ActionAdapterResult.Success("ExpandCollapsePattern execution completed.");
+        }
+        catch (ElementNotEnabledException)
+        {
+            return ActionAdapterResult.Unsupported("Resolved expand/collapse target became disabled before execution.");
+        }
+        catch (ElementNotAvailableException)
+        {
+            return ActionAdapterResult.Failed("Resolved expand/collapse target became unavailable during execution.");
+        }
+        catch (InvalidOperationException)
+        {
+            return ActionAdapterResult.Failed("ExpandCollapsePattern execution failed because the provider rejected the operation.");
         }
     }
 }

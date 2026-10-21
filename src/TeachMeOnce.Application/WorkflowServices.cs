@@ -117,6 +117,12 @@ public sealed class JsonWorkflowStore : IWorkflowStore
             {
                 throw new InvalidDataException($"Workflow '{source}' contains a Toggle action without a canonical expected state.");
             }
+
+            if (string.Equals(action.ActionType, "Select", StringComparison.Ordinal)
+                && !string.Equals(action.ExpectedValue, WorkflowSchema.SelectedState, StringComparison.Ordinal))
+            {
+                throw new InvalidDataException($"Workflow '{source}' contains a Select action without the canonical expected state.");
+            }
         }
     }
 }
@@ -350,6 +356,22 @@ public sealed class UiAutomationWorkflowExecutor : IWorkflowExecutor
                         return Result(ExecutionStatus.TimedOut, "Toggle completed without reaching the expected state.", completedActionCount, started);
                     }
                 }
+                else if (string.Equals(action.ActionType, "Select", StringComparison.Ordinal))
+                {
+                    _diagnostics.Write("Info", $"Selected action {index + 1} of {workflow.Actions.Count}.");
+                    if (!await WaitForSelectionAsync(action.Target, cancellationToken))
+                    {
+                        return Result(ExecutionStatus.TimedOut, "Selection completed without reaching the selected state.", completedActionCount, started);
+                    }
+                }
+                else if (string.Equals(action.ActionType, "ExpandCollapse", StringComparison.Ordinal))
+                {
+                    _diagnostics.Write("Info", $"Set expand/collapse action {index + 1} of {workflow.Actions.Count} to {action.ExpectedValue}.");
+                    if (!await WaitForExpandCollapseStateAsync(action.Target, action.ExpectedValue!, cancellationToken))
+                    {
+                        return Result(ExecutionStatus.TimedOut, "Expand/collapse completed without reaching the expected state.", completedActionCount, started);
+                    }
+                }
                 else
                 {
                     var inputValue = action.InputValue!;
@@ -553,6 +575,95 @@ public sealed class UiAutomationWorkflowExecutor : IWorkflowExecutor
                     && resolution.Element.TryGetCurrentPattern(TogglePattern.Pattern, out var patternObject)
                     && patternObject is TogglePattern pattern
                     && string.Equals(pattern.Current.ToggleState.ToString(), expectedState, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            catch (Exception exception) when (exception is ElementNotAvailableException or COMException or InvalidOperationException)
+            {
+                // Reacquire the same descriptor within the bounded verification window.
+            }
+
+            await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+        }
+
+        return false;
+    }
+
+    private async Task<bool> WaitForSelectionAsync(
+        TargetDescriptor descriptor,
+        CancellationToken cancellationToken)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(3);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                var remaining = deadline - DateTimeOffset.UtcNow;
+                if (remaining <= TimeSpan.Zero)
+                {
+                    break;
+                }
+
+                var windowResult = await WaitForActionWindowAsync(descriptor, remaining, cancellationToken).ConfigureAwait(false);
+                if (windowResult.Status != WaitStatus.Satisfied || windowResult.Value is null)
+                {
+                    await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                var resolution = _resolver.Resolve(windowResult.Value, descriptor);
+                if (resolution.Status == ResolutionStatus.Resolved
+                    && resolution.Element is not null
+                    && resolution.Element.TryGetCurrentPattern(SelectionItemPattern.Pattern, out var patternObject)
+                    && patternObject is SelectionItemPattern pattern
+                    && pattern.Current.IsSelected)
+                {
+                    return true;
+                }
+            }
+            catch (Exception exception) when (exception is ElementNotAvailableException or COMException or InvalidOperationException)
+            {
+                // Reacquire the same descriptor within the bounded verification window.
+            }
+
+            await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+        }
+
+        return false;
+    }
+
+    private async Task<bool> WaitForExpandCollapseStateAsync(
+        TargetDescriptor descriptor,
+        string expectedState,
+        CancellationToken cancellationToken)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(3);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                var remaining = deadline - DateTimeOffset.UtcNow;
+                if (remaining <= TimeSpan.Zero)
+                {
+                    break;
+                }
+
+                var windowResult = await WaitForActionWindowAsync(descriptor, remaining, cancellationToken).ConfigureAwait(false);
+                if (windowResult.Status != WaitStatus.Satisfied || windowResult.Value is null)
+                {
+                    await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                var resolution = _resolver.Resolve(windowResult.Value, descriptor);
+                if (resolution.Status == ResolutionStatus.Resolved
+                    && resolution.Element is not null
+                    && resolution.Element.TryGetCurrentPattern(ExpandCollapsePattern.Pattern, out var patternObject)
+                    && patternObject is ExpandCollapsePattern pattern
+                    && string.Equals(pattern.Current.ExpandCollapseState.ToString(), expectedState, StringComparison.Ordinal))
                 {
                     return true;
                 }

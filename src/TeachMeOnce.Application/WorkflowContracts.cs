@@ -15,6 +15,15 @@ public static class WorkflowSchema
             "Off",
             "Indeterminate"
         };
+
+    public const string SelectedState = "Selected";
+
+    public static readonly IReadOnlySet<string> SupportedExpandCollapseStates =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Expanded",
+            "Collapsed"
+        };
 }
 
 public sealed class WorkflowDocument

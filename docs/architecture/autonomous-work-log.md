@@ -37,6 +37,13 @@ one visible Notepad window; physical-input recording remains manual evidence.
   ambiguous multi-toggle recordings. Replay checks enabled state, executes one
   `TogglePattern.Toggle()`, and verifies the exact expected state without
   retrying the toggle operation.
+- Added deterministic `Select` support for one selection candidate per recording
+  session. Replay uses `SelectionItemPattern.Select()` and verifies
+  `IsSelected` after reacquiring the same target.
+- Added deterministic `ExpandCollapse` support for one candidate per recording
+  session. Recording persists the observed `Expanded` or `Collapsed` state;
+  replay is idempotent when already at the desired state, otherwise performs
+  one explicit expand/collapse operation and verifies the resulting state.
 - Updated the Notepad runbook to accept either `SetValue` or `TextInput`.
 
 ## Verification actually run
@@ -77,5 +84,6 @@ and target waiting rather than the capture implementation.
    for physical input acceptance.
 3. Add fixture coverage for adapter execution and stale-provider retry paths,
    keeping the existing dependency-free test boundary.
-4. Extend the registry with Select only when deterministic selection state and
-   postcondition coverage are available.
+4. Add interactive fixture evidence for physical Select and ExpandCollapse
+   recording, then audit replay cancellation and UI recovery before starting
+   another action type.

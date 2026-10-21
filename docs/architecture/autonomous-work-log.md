@@ -82,6 +82,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
   plus ExpandCollapse on WPF. The first WinForms attempt exposed a fixture
   naming difference (`List item two` versus the WPF AutomationId); the test was
   corrected to use the observed stable WinForms name.
+- Added an always-visible operating-policy summary to the product shell so
+  users can see the same-integrity, UIA-first, sensitive-value, coordinate, and
+  storage boundaries without consulting JSON or architecture documents.
 - Strengthened workflow persistence validation for missing process/window/element
   descriptor fields and missing pattern/ancestor metadata; invalid descriptors
   now fail before they can reach UIA replay.

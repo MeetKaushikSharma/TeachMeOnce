@@ -90,6 +90,6 @@
         </Grid>
       </Grid>
     </Grid>
-    <TextBlock Grid.Row="4" Margin="0,16,0,0" Foreground="#666" Text="P1: explicitly attached same-integrity targets, UI Automation first, exactly-one-target resolution." />
+     <TextBlock Grid.Row="4" Margin="0,16,0,0" Foreground="#666" TextWrapping="Wrap" Text="MVP policy: same-integrity targets only; UI Automation first; exactly-one-target resolution; sensitive values are refused; coordinate fallback and silent elevation are not used. Workflows and diagnostics are stored under the current user's LocalApplicationData\TeachMeOnce folder." AutomationProperties.AutomationId="OperatingPolicyText" AutomationProperties.HelpText="TeachMeOnce safety and storage policy" />
   </Grid>
 </Window>

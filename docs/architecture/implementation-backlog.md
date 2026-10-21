@@ -136,7 +136,7 @@ machine.
 
 | ID | Work item | Acceptance criteria |
 | --- | --- | --- |
-| P5.1 | Add structured diagnostic schema and retention | Correlation ID, workflow/action ID, state, process/window evidence, and redacted reason are available; logs have bounded retention |
+| P5.1 | Add structured diagnostic schema and retention | Stable diagnostic IDs, redacted reasons, and bounded visible presentation are available; correlation/workflow/action linkage and file retention remain future work |
 | P5.2 | Add startup/crash recovery | Incomplete sessions are detected, hooks are cleaned up, valid workflows remain available, and recovery guidance is shown |
 | P5.3 | Define installer/signing/update/rollback | Installation is per policy, signed as required, preserves user data, supports rollback, and does not require unsupported elevation behavior |
 | P5.4 | Validate self-contained folder deployment | Published smoke runs on a separate clean Windows x64 environment; results are recorded without claiming success when unavailable |

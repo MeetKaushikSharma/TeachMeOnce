@@ -149,6 +149,7 @@ public static class VerificationPolicy
 
 public sealed class DiagnosticEntry
 {
+    public Guid Id { get; init; } = Guid.NewGuid();
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
     public required string Level { get; init; }
     public required string Message { get; init; }

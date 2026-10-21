@@ -85,6 +85,9 @@ one visible Notepad window; physical-input recording remains manual evidence.
 - Added an always-visible operating-policy summary to the product shell so
   users can see the same-integrity, UIA-first, sensitive-value, coordinate, and
   storage boundaries without consulting JSON or architecture documents.
+- Added stable diagnostic entry identifiers to in-memory entries, persisted
+  logs, and the visible WPF diagnostic list; the contract test verifies IDs are
+  present while redaction behavior remains unchanged.
 - Strengthened workflow persistence validation for missing process/window/element
   descriptor fields and missing pattern/ancestor metadata; invalid descriptors
   now fail before they can reach UIA replay.

@@ -284,7 +284,7 @@ public partial class MainWindow : Window
                 DiagnosticList.Items.RemoveAt(0);
             }
 
-            DiagnosticList.Items.Add($"[{entry.Level}] {entry.Message}");
+            DiagnosticList.Items.Add($"[{entry.Level}] [{entry.Id.ToString("N")[..8]}] {entry.Message}");
         }));
     }
 

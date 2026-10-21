@@ -277,6 +277,7 @@ internal static class Program
             diagnostics.Write("Warning", "A password=super-secret and token=abc123 must not be persisted.");
             await diagnostics.FlushAsync();
             var diagnosticText = await File.ReadAllTextAsync(diagnosticPath);
+            Assert(diagnostics.Entries.Single().Id != Guid.Empty, "diagnostics receive a stable identifier");
             Assert(!diagnosticText.Contains("super-secret", StringComparison.Ordinal), "diagnostics redact password values");
             Assert(!diagnosticText.Contains("abc123", StringComparison.Ordinal), "diagnostics redact token values");
             Assert(diagnosticText.Contains("[REDACTED]", StringComparison.Ordinal), "diagnostics retain a useful redaction marker");

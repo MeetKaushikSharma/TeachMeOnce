@@ -287,7 +287,7 @@ public sealed class DiagnosticLog : IDiagnosticSink
 
             await File.AppendAllTextAsync(
                 _filePath!,
-                $"{entry.TimestampUtc:O} [{entry.Level}] {entry.Message}{Environment.NewLine}")
+                $"{entry.TimestampUtc:O} [{entry.Level}] [{entry.Id:N}] {entry.Message}{Environment.NewLine}")
                 .ConfigureAwait(false);
         }
         finally

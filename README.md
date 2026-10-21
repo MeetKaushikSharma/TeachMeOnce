@@ -214,10 +214,12 @@ The product now begins at `src/TeachMeOnce.App`, with reusable application
 services in `src/TeachMeOnce.Application` and UI Automation boundaries in
 `src/TeachMeOnce.Automation`. The product slice also supports explicitly
 selecting and attaching to a running same-integrity external window, recording
-semantic Invoke, Toggle, Select, ExpandCollapse, and non-sensitive SetValue actions through a bounded global
-input session, saving a versioned workflow, and replaying it through
-deterministic UI Automation resolution. The built-in demo remains available as
-a regression surface.
+semantic Invoke, Toggle, Select, ExpandCollapse, SetValue, and non-sensitive
+TextInput actions through a bounded global input session, saving a versioned
+workflow, and replaying it through deterministic UI Automation resolution. The
+workflow library supports safe rename, delete, import, export, and action-detail
+review without displaying recorded input values. The built-in demo remains
+available as a regression surface.
 
 Run the product from an interactive Windows desktop with:
 
